@@ -502,93 +502,166 @@ const HelpScreen = () => {
 };
 
 const RemindersScreen = () => {
-  const { theme } = useContext(ThemeContext);
-  const styles = getStyles(theme);
-  const [remindersEnabled, setRemindersEnabled] = useState(false);
-  const [reminderTime, setReminderTime] = useState("08:00");
+    const { theme } = useContext(ThemeContext);
+    const styles = getStyles(theme);
+    const [remindersEnabled, setRemindersEnabled] = useState(false);
+    const [reminderTime, setReminderTime] = useState('08:00');
+    const notificationRef = useRef(null);
 
-  useEffect(() => {
-    const savedEnabled = localStorage.getItem("remindersEnabled") === "true";
-    const savedTime = localStorage.getItem("reminderTime") || "08:00";
-    setRemindersEnabled(savedEnabled);
-    setReminderTime(savedTime);
-  }, []);
+    // 1. Cargar configuración guardada
+    useEffect(() => {
+        const savedEnabled = localStorage.getItem('remindersEnabled') === 'true';
+        const savedTime = localStorage.getItem('reminderTime') || '08:00';
+        setRemindersEnabled(savedEnabled);
+        setReminderTime(savedTime);
+        
+        // Verificar permisos al cargar
+        checkNotificationPermission();
+    }, []);
 
-  const toggleReminders = () => {
-    const newValue = !remindersEnabled;
-    setRemindersEnabled(newValue);
-    localStorage.setItem("remindersEnabled", newValue);
-
-    if (newValue && Notification.permission !== "granted") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          new Notification("Recordatorios activados", {
-            body: `Recibirás un recordatorio diario a las ${reminderTime}`,
-          });
+    // 2. Función para verificar permisos
+    const checkNotificationPermission = async () => {
+        if (!('Notification' in window)) {
+            console.warn('Este navegador no soporta notificaciones');
+            return false;
         }
-      });
-    }
-  };
+        
+        if (Notification.permission !== 'granted') {
+            const permission = await Notification.requestPermission();
+            return permission === 'granted';
+        }
+        return true;
+    };
 
-  const handleTimeChange = (e) => {
-    const newTime = e.target.value;
-    setReminderTime(newTime);
-    localStorage.setItem("reminderTime", newTime);
-  };
+    // 3. Programar notificación diaria
+    const scheduleDailyNotification = async () => {
+        if (!await checkNotificationPermission()) return;
+        
+        // Cancelar notificación anterior si existe
+        if (notificationRef.current) {
+            clearTimeout(notificationRef.current);
+        }
+        
+        const [hours, minutes] = reminderTime.split(':').map(Number);
+        const now = new Date();
+        const notificationTime = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            hours,
+            minutes
+        );
+        
+        // Si la hora ya pasó hoy, programar para mañana
+        if (notificationTime < now) {
+            notificationTime.setDate(notificationTime.getDate() + 1);
+        }
+        
+        const timeout = notificationTime - now;
+        
+        notificationRef.current = setTimeout(() => {
+            showNotification();
+            // Repetir cada 24 horas
+            scheduleDailyNotification();
+        }, timeout);
+    };
 
-  return (
-    <div style={styles.reminders.container}>
-      <h2 style={styles.reminders.title}>Recordatorios Diarios</h2>
-      <p style={styles.reminders.subtitle}>
-        Establece un recordatorio para no olvidar tu práctica diaria.
-      </p>
-      <div style={styles.reminders.card}>
-        <div style={styles.reminders.switchContainer}>
-          <span style={styles.reminders.switchLabel}>
-            Recordatorios activados
-          </span>
-          <button
-            style={{
-              ...styles.reminders.toggleButton,
-              backgroundColor: remindersEnabled ? theme.primary : theme.border,
-            }}
-            onClick={toggleReminders}
-            aria-label={
-              remindersEnabled
-                ? "Desactivar recordatorios"
-                : "Activar recordatorios"
+    // 4. Mostrar notificación
+    const showNotification = () => {
+        if (Notification.permission === 'granted') {
+            new Notification('Recordatorio de Serenidad', {
+                body: 'Es hora de tu práctica de respiración diaria',
+                icon: '/logo192.png'
+            });
+        }
+    };
+
+    // 5. Manejar cambios en los recordatorios
+    const toggleReminders = async () => {
+        const newValue = !remindersEnabled;
+        setRemindersEnabled(newValue);
+        localStorage.setItem('remindersEnabled', newValue);
+        
+        if (newValue) {
+            if (await checkNotificationPermission()) {
+                scheduleDailyNotification();
+                showNotification(); // Notificación inmediata de confirmación
             }
-          >
-            <motion.div
-              style={styles.reminders.toggleHandle}
-              animate={{ x: remindersEnabled ? 20 : 0 }}
-              transition={{ type: "spring", stiffness: 700, damping: 30 }}
-            />
-          </button>
-        </div>
+        } else {
+            if (notificationRef.current) {
+                clearTimeout(notificationRef.current);
+            }
+        }
+    };
 
-        {remindersEnabled && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            transition={{ duration: 0.3 }}
-            style={styles.reminders.timePickerContainer}
-          >
-            <label htmlFor="reminder-time" style={styles.reminders.timeLabel}>
-              Hora del recordatorio:
-            </label>
-            <input
-              type="time"
-              id="reminder-time"
-              value={reminderTime}
-              onChange={handleTimeChange}
-              style={styles.reminders.timeInput}
-            />
-          </motion.div>
-        )}
-      </div>
-    </div>
-  );
+    // 6. Manejar cambio de hora
+    const handleTimeChange = (e) => {
+        const newTime = e.target.value;
+        setReminderTime(newTime);
+        localStorage.setItem('reminderTime', newTime);
+        
+        if (remindersEnabled) {
+            scheduleDailyNotification();
+        }
+    };
+
+    // Limpiar al desmontar
+    useEffect(() => {
+        return () => {
+            if (notificationRef.current) {
+                clearTimeout(notificationRef.current);
+            }
+        };
+    }, []);
+
+    return (
+        <div style={styles.reminders.container}>
+            <h2 style={styles.reminders.title}>Recordatorios Diarios</h2>
+            <p style={styles.reminders.subtitle}>Establece un recordatorio para no olvidar tu práctica diaria.</p>
+            
+            <div style={styles.reminders.card}>
+                <div style={styles.reminders.switchContainer}>
+                    <span style={styles.reminders.switchLabel}>Recordatorios activados</span>
+                    <button 
+                        style={{
+                            ...styles.reminders.toggleButton,
+                            backgroundColor: remindersEnabled ? theme.primary : theme.border
+                        }}
+                        onClick={toggleReminders}
+                    >
+                        <motion.div
+                            style={styles.reminders.toggleHandle}
+                            animate={{ x: remindersEnabled ? 20 : 0 }}
+                            transition={{ type: 'spring', stiffness: 700, damping: 30 }}
+                        />
+                    </button>
+                </div>
+                
+                {remindersEnabled && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ duration: 0.3 }}
+                        style={styles.reminders.timePickerContainer}
+                    >
+                        <label htmlFor="reminder-time" style={styles.reminders.timeLabel}>
+                            Hora del recordatorio:
+                        </label>
+                        <input
+                            type="time"
+                            id="reminder-time"
+                            value={reminderTime}
+                            onChange={handleTimeChange}
+                            style={styles.reminders.timeInput}
+                        />
+                        <p style={{ fontSize: '0.8rem', color: theme.textSecondary, marginTop: '8px' }}>
+                            Recibirás una notificación a esta hora cada día
+                        </p>
+                    </motion.div>
+                )}
+            </div>
+        </div>
+    );
 };
 
 const ThemesScreen = () => {
@@ -893,13 +966,6 @@ const BreathingView = ({ exercise, onBack }) => {
         </div>
       )}
 
-      <button
-        onClick={() => setIsMuted(!isMuted)}
-        style={styles.breathing.muteButton}
-        aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-      >
-        {isMuted ? "🔇" : "🔊"}
-      </button>
     </div>
   );
 };
