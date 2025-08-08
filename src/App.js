@@ -1,13 +1,13 @@
-import React, { 
-  useState, 
-  useEffect, 
-  useRef, 
-  createContext, 
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  createContext,
   useContext,
   useMemo,
-  useCallback 
-} from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+  useCallback,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // --- ICONOS SVG ---
 const MenuIcon = () => (
@@ -254,10 +254,11 @@ const MainApp = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState("relax");
 
-  const navigateTo = (screen) => {
+  const navigateTo = React.useCallback((screen) => {
+    console.log("Navigating to:", screen); // Para debug
     setCurrentScreen(screen);
     setIsDrawerOpen(false);
-  };
+  }, []);
 
   const startExercise = (exerciseKey) => {
     setSelectedExercise(exerciseKey);
@@ -342,20 +343,26 @@ const Header = ({ onMenuClick }) => {
 const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
   const { theme } = useContext(ThemeContext);
   const styles = getStyles(theme);
+
   return (
     <>
+      {isOpen && (
+        <motion.div
+          style={styles.drawer.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          key="overlay"
+        />
+      )}
       <motion.div
-        style={{ ...styles.drawer.overlay }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isOpen ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
-        onClick={onClose}
-      />
-      <motion.div
-        style={{ ...styles.drawer.container }}
+        style={styles.drawer.container}
         initial={{ x: "-100%" }}
         animate={{ x: isOpen ? 0 : "-100%" }}
+        exit={{ x: "-100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        key="drawer"
       >
         <button
           onClick={onClose}
@@ -365,40 +372,18 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
           <CloseIcon />
         </button>
         <nav>
-          <button
-            style={styles.drawer.navLink}
-            onClick={() => onNavigate("home")}
-            aria-current={window.location.pathname === "/" ? "page" : undefined}
-          >
-            Prácticas
-          </button>
-          <button
-            style={styles.drawer.navLink}
-            onClick={() => onNavigate("help")}
-            aria-current={
-              window.location.pathname === "/help" ? "page" : undefined
-            }
-          >
-            Guía de Ayuda
-          </button>
-          <button
-            style={styles.drawer.navLink}
-            onClick={() => onNavigate("reminders")}
-            aria-current={
-              window.location.pathname === "/reminders" ? "page" : undefined
-            }
-          >
-            Recordatorios
-          </button>
-          <button
-            style={styles.drawer.navLink}
-            onClick={() => onNavigate("themes")}
-            aria-current={
-              window.location.pathname === "/themes" ? "page" : undefined
-            }
-          >
-            Temas
-          </button>
+          {["home", "help", "reminders", "themes"].map((screen) => (
+            <button
+              key={screen}
+              style={styles.drawer.navLink}
+              onClick={() => onNavigate(screen)}
+            >
+              {screen === "home" && "Prácticas"}
+              {screen === "help" && "Guía de Ayuda"}
+              {screen === "reminders" && "Recordatorios"}
+              {screen === "themes" && "Temas"}
+            </button>
+          ))}
         </nav>
       </motion.div>
     </>
