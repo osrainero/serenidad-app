@@ -1,0 +1,36 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "serviceworker": true
+  },
+  "extends": [
+    "react-app",
+    "react-app/jest",
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-restricted-globals": ["error", {
+      "name": "event",
+      "message": "Use local parameter name instead."
+    }]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.js"],
+      "rules": {
+        "no-undef": "off"
+      }
+    },
+    {
+      "files": ["service-worker.js"],
+      "rules": {
+        "no-restricted-globals": "off"
+      }
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+// service-worker.js
+/* eslint-disable no-restricted-globals, no-undef */
 const CACHE_NAME = 'serenidad-v1';
 const ASSETS = [
   '/',
@@ -10,6 +12,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -20,7 +23,6 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Manejar notificaciones
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
