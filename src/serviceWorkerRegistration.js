@@ -1,14 +1,12 @@
-// serviceWorkerRegistration.js
-/* eslint-disable no-undef */
 export function register() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/service-worker.js')
         .then(registration => {
-          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          console.log('SW registered:', registration);
         })
         .catch(error => {
-          console.log('ServiceWorker registration failed: ', error);
+          console.log('SW registration failed:', error);
         });
     });
   }
