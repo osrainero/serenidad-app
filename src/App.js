@@ -360,7 +360,7 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div style={styles.header.titleContainer}>
         <LogoIcon color={theme.primary} />
-        <h1 style={styles.header.title}>Serenidad</h1>
+        <h1 style={styles.header.title}>Serenidad V1.1</h1>
       </div>
     </div>
   );
