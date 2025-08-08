@@ -8,6 +8,9 @@ import React, {
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import RemindersScreen from './screens/RemindersScreen';
+
+export const ThemeContext = createContext();
 
 // --- ICONOS SVG ---
 const MenuIcon = () => (
@@ -26,6 +29,7 @@ const MenuIcon = () => (
     <line x1="3" y1="18" x2="21" y2="18"></line>
   </svg>
 );
+
 const CloseIcon = () => (
   <svg
     width="24"
@@ -41,6 +45,7 @@ const CloseIcon = () => (
     <line x1="6" y1="6" x2="18" y2="18"></line>
   </svg>
 );
+
 const LogoIcon = ({ color }) => (
   <svg
     width="32"
@@ -55,6 +60,7 @@ const LogoIcon = ({ color }) => (
     />
   </svg>
 );
+
 const RelaxIcon = () => (
   <svg
     width="24"
@@ -69,6 +75,7 @@ const RelaxIcon = () => (
     <path d="M3 12c.83-.67 2-1.5 3-1s2.17.33 3 1 1.67.67 2.5 0 2.5-1.5 3.5-1 .83.67 2 1.5 3 0 3-1" />
   </svg>
 );
+
 const BoxIcon = () => (
   <svg
     width="24"
@@ -83,6 +90,7 @@ const BoxIcon = () => (
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
   </svg>
 );
+
 const SleepIcon = () => (
   <svg
     width="24"
@@ -97,6 +105,7 @@ const SleepIcon = () => (
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </svg>
 );
+
 const BackArrowIcon = () => (
   <svg
     width="24"
@@ -112,6 +121,7 @@ const BackArrowIcon = () => (
     <path d="M12 19l-7-7 7-7" />
   </svg>
 );
+
 const CheckIcon = () => (
   <svg
     width="24"
@@ -182,8 +192,6 @@ const themes = {
   },
 };
 
-const ThemeContext = createContext();
-
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("appTheme");
@@ -250,7 +258,7 @@ const helpContent = [
   {
     title: "Respiración 4-7-8",
     content:
-      "Esta técnica es un potente tranquilizante natural para el sistema nervioso, ideal para antes de dormir. \n1. Coloca la punta de la lengua detrás de los dientes frontales superiores, tocando el paladar. \n2. Expulsa todo el aire por la boca con fuerza, haciendo un sonido sibilante. \n3. Cierra la boca e inhala por la nariz contando mentalmente hasta 4. \n4. Sostén la respiración durante 7 segundos. \n5. Expulsa todo el aire de nuevo por la boca durante 8 segundos, produciendo el mismo sonido. \n6. Repite el ciclo 3 o 4 veces.",
+      "Esta técnica es un potente tranquilizante natural para el sistema nervioso, ideal para antes de dormir. \n1. Coloca la punta de la lengua detrás de los dientes frontales superiores, tocando el paladar. \n2. Expulsa todo el aire por la boca con fuerza, haciendo un sonido sibilante. \n3. Cierra la boca e inhala por la nariz contando mentalmente hasta 4 \n4. Sostén la respiración durante 7 segundos. \n5. Expulsa todo el aire de nuevo por la boca durante 8 segundos, produciendo el mismo sonido. \n6. Repite el ciclo 3 o 4 veces.",
   },
 ];
 
@@ -286,7 +294,7 @@ const MainApp = () => {
         return <HomeScreen onStart={startExercise} />;
       case "help":
         return <HelpScreen />;
-      case "reminders":
+      case 'reminders': 
         return <RemindersScreen />;
       case "themes":
         return <ThemesScreen />;
@@ -360,7 +368,7 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div style={styles.header.titleContainer}>
         <LogoIcon color={theme.primary} />
-        <h1 style={styles.header.title}>Serenidad V1.1</h1>
+        <h1 style={styles.header.title}>Serenidad V1.2</h1>
       </div>
     </div>
   );
@@ -499,169 +507,6 @@ const HelpScreen = () => {
       </div>
     </div>
   );
-};
-
-const RemindersScreen = () => {
-    const { theme } = useContext(ThemeContext);
-    const styles = getStyles(theme);
-    const [remindersEnabled, setRemindersEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState('08:00');
-    const notificationRef = useRef(null);
-
-    // 1. Cargar configuración guardada
-    useEffect(() => {
-        const savedEnabled = localStorage.getItem('remindersEnabled') === 'true';
-        const savedTime = localStorage.getItem('reminderTime') || '08:00';
-        setRemindersEnabled(savedEnabled);
-        setReminderTime(savedTime);
-        
-        // Verificar permisos al cargar
-        checkNotificationPermission();
-    }, []);
-
-    // 2. Función para verificar permisos
-    const checkNotificationPermission = async () => {
-        if (!('Notification' in window)) {
-            console.warn('Este navegador no soporta notificaciones');
-            return false;
-        }
-        
-        if (Notification.permission !== 'granted') {
-            const permission = await Notification.requestPermission();
-            return permission === 'granted';
-        }
-        return true;
-    };
-
-    // 3. Programar notificación diaria
-    const scheduleDailyNotification = async () => {
-        if (!await checkNotificationPermission()) return;
-        
-        // Cancelar notificación anterior si existe
-        if (notificationRef.current) {
-            clearTimeout(notificationRef.current);
-        }
-        
-        const [hours, minutes] = reminderTime.split(':').map(Number);
-        const now = new Date();
-        const notificationTime = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-            hours,
-            minutes
-        );
-        
-        // Si la hora ya pasó hoy, programar para mañana
-        if (notificationTime < now) {
-            notificationTime.setDate(notificationTime.getDate() + 1);
-        }
-        
-        const timeout = notificationTime - now;
-        
-        notificationRef.current = setTimeout(() => {
-            showNotification();
-            // Repetir cada 24 horas
-            scheduleDailyNotification();
-        }, timeout);
-    };
-
-    // 4. Mostrar notificación
-    const showNotification = () => {
-        if (Notification.permission === 'granted') {
-            new Notification('Recordatorio de Serenidad', {
-                body: 'Es hora de tu práctica de respiración diaria',
-                icon: '/logo192.png'
-            });
-        }
-    };
-
-    // 5. Manejar cambios en los recordatorios
-    const toggleReminders = async () => {
-        const newValue = !remindersEnabled;
-        setRemindersEnabled(newValue);
-        localStorage.setItem('remindersEnabled', newValue);
-        
-        if (newValue) {
-            if (await checkNotificationPermission()) {
-                scheduleDailyNotification();
-                showNotification(); // Notificación inmediata de confirmación
-            }
-        } else {
-            if (notificationRef.current) {
-                clearTimeout(notificationRef.current);
-            }
-        }
-    };
-
-    // 6. Manejar cambio de hora
-    const handleTimeChange = (e) => {
-        const newTime = e.target.value;
-        setReminderTime(newTime);
-        localStorage.setItem('reminderTime', newTime);
-        
-        if (remindersEnabled) {
-            scheduleDailyNotification();
-        }
-    };
-
-    // Limpiar al desmontar
-    useEffect(() => {
-        return () => {
-            if (notificationRef.current) {
-                clearTimeout(notificationRef.current);
-            }
-        };
-    }, []);
-
-    return (
-        <div style={styles.reminders.container}>
-            <h2 style={styles.reminders.title}>Recordatorios Diarios</h2>
-            <p style={styles.reminders.subtitle}>Establece un recordatorio para no olvidar tu práctica diaria.</p>
-            
-            <div style={styles.reminders.card}>
-                <div style={styles.reminders.switchContainer}>
-                    <span style={styles.reminders.switchLabel}>Recordatorios activados</span>
-                    <button 
-                        style={{
-                            ...styles.reminders.toggleButton,
-                            backgroundColor: remindersEnabled ? theme.primary : theme.border
-                        }}
-                        onClick={toggleReminders}
-                    >
-                        <motion.div
-                            style={styles.reminders.toggleHandle}
-                            animate={{ x: remindersEnabled ? 20 : 0 }}
-                            transition={{ type: 'spring', stiffness: 700, damping: 30 }}
-                        />
-                    </button>
-                </div>
-                
-                {remindersEnabled && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        transition={{ duration: 0.3 }}
-                        style={styles.reminders.timePickerContainer}
-                    >
-                        <label htmlFor="reminder-time" style={styles.reminders.timeLabel}>
-                            Hora del recordatorio:
-                        </label>
-                        <input
-                            type="time"
-                            id="reminder-time"
-                            value={reminderTime}
-                            onChange={handleTimeChange}
-                            style={styles.reminders.timeInput}
-                        />
-                        <p style={{ fontSize: '0.8rem', color: theme.textSecondary, marginTop: '8px' }}>
-                            Recibirás una notificación a esta hora cada día
-                        </p>
-                    </motion.div>
-                )}
-            </div>
-        </div>
-    );
 };
 
 const ThemesScreen = () => {
@@ -960,7 +805,6 @@ const BreathingView = ({ exercise, onBack }) => {
           </motion.button>
         </div>
       )}
-
     </div>
   );
 };
@@ -1353,7 +1197,7 @@ const getStyles = (theme) => ({
       alignItems: "center",
       justifyContent: "center",
       width: "100%",
-      marginTop: "-50px", // Añade espacio arriba
+      marginTop: "-50px",
     },
     circle: {
       width: "250px",
@@ -1395,18 +1239,18 @@ const getStyles = (theme) => ({
       borderRadius: "2px",
     },
     timerDisplay: {
-      fontSize: "2.5rem", // Reducir tamaño
+      fontSize: "2.5rem",
       color: theme.text,
       fontWeight: "200",
       position: "absolute",
-      bottom: "150px", // Posicionar más arriba
+      bottom: "150px",
       left: 0,
       right: 0,
       textAlign: "center",
     },
     cyclesCounter: {
       position: "absolute",
-      bottom: "120px", // Posicionar debajo del timer
+      bottom: "120px",
       left: 0,
       right: 0,
       color: theme.textSecondary,
