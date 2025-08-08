@@ -158,12 +158,27 @@ const themes = {
   },
   dinamico: {
     name: "Material You",
-    primary: "#E879F9",
-    background: "#241A2E",
-    card: "#3B2C4A",
-    text: "#F3E8FF",
-    textSecondary: "#D9C2ED",
-    border: "#58456B",
+    primary:
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--primary"
+      ) || "#E879F9",
+    background:
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--background"
+      ) || "#241A2E",
+    card:
+      getComputedStyle(document.documentElement).getPropertyValue("--card") ||
+      "#3B2C4A",
+    text:
+      getComputedStyle(document.documentElement).getPropertyValue("--text") ||
+      "#F3E8FF",
+    textSecondary:
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--text-secondary"
+      ) || "#D9C2ED",
+    border:
+      getComputedStyle(document.documentElement).getPropertyValue("--border") ||
+      "#58456B",
   },
 };
 
@@ -290,6 +305,17 @@ const MainApp = () => {
   useEffect(() => {
     document.body.style.backgroundColor = theme.background;
     document.body.style.color = theme.text;
+  }, [theme]);
+
+  useEffect(() => {
+    if (theme.name === "Material You") {
+      document.documentElement.style.setProperty("--primary", "#E879F9");
+      document.documentElement.style.setProperty("--background", "#241A2E");
+      document.documentElement.style.setProperty("--card", "#3B2C4A");
+      document.documentElement.style.setProperty("--text", "#F3E8FF");
+      document.documentElement.style.setProperty("--text-secondary", "#D9C2ED");
+      document.documentElement.style.setProperty("--border", "#58456B");
+    }
   }, [theme]);
 
   const styles = getStyles(theme);
@@ -630,14 +656,11 @@ const BreathingView = ({ exercise, onBack }) => {
     const savedDuration = localStorage.getItem("breathDuration");
     return savedDuration ? parseInt(savedDuration) : 60;
   });
-  const [isMuted, setIsMuted] = useState(() => {
-    return localStorage.getItem("isMuted") === "true";
-  });
+  const [isMuted, setIsMuted] = useState(true); // Ahora siempre silenciado
   const [timeLeft, setTimeLeft] = useState(duration);
   const [remainingPhaseTime, setRemainingPhaseTime] = useState(0);
   const [cyclesCompleted, setCyclesCompleted] = useState(0);
   const timerRef = useRef(null);
-  const audioRef = useRef(null);
 
   const phaseDurations = useMemo(
     () => ({
@@ -752,13 +775,6 @@ const BreathingView = ({ exercise, onBack }) => {
         }s ease-in-out`,
       });
 
-      if (!isMuted && audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current
-          .play()
-          .catch((e) => console.log("Error al reproducir sonido:", e));
-      }
-
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
@@ -788,11 +804,6 @@ const BreathingView = ({ exercise, onBack }) => {
 
   return (
     <div style={styles.breathing.container}>
-      <audio
-        ref={audioRef}
-        src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3"
-      />
-
       <button
         onClick={onBack}
         style={styles.breathing.backButton}
@@ -803,10 +814,7 @@ const BreathingView = ({ exercise, onBack }) => {
 
       <div style={styles.breathing.circleContainer}>
         <motion.div
-          style={{
-            ...styles.breathing.circle,
-            background: circleStyle.background,
-          }}
+          style={styles.breathing.circle}
           animate={{
             scale: circleStyle.scale,
             background: circleStyle.background,
@@ -832,7 +840,6 @@ const BreathingView = ({ exercise, onBack }) => {
             <div style={styles.breathing.progressBarContainer}>
               <motion.div
                 style={styles.breathing.progressBar}
-                initial={{ width: "0%" }}
                 animate={{ width: `${getPhaseProgress()}%` }}
                 transition={{ duration: 1 }}
               />
@@ -870,7 +877,6 @@ const BreathingView = ({ exercise, onBack }) => {
                 }
                 onClick={() => setDuration(min * 60)}
                 whileTap={{ scale: 0.95 }}
-                aria-label={`${min} minutos`}
               >
                 {min} min
               </motion.button>
@@ -1286,7 +1292,7 @@ const getStyles = (theme) => ({
       alignItems: "center",
       justifyContent: "center",
       width: "100%",
-      position: "relative",
+      marginTop: "-50px", // Añade espacio arriba
     },
     circle: {
       width: "250px",
@@ -1328,18 +1334,23 @@ const getStyles = (theme) => ({
       borderRadius: "2px",
     },
     timerDisplay: {
-      fontSize: "3.5rem",
+      fontSize: "2.5rem", // Reducir tamaño
       color: theme.text,
       fontWeight: "200",
       position: "absolute",
-      bottom: 200,
-      textShadow: `0 2px 4px rgba(0,0,0,0.1)`,
+      bottom: "150px", // Posicionar más arriba
+      left: 0,
+      right: 0,
+      textAlign: "center",
     },
     cyclesCounter: {
       position: "absolute",
-      bottom: "150px",
+      bottom: "120px", // Posicionar debajo del timer
+      left: 0,
+      right: 0,
       color: theme.textSecondary,
       fontSize: "0.9rem",
+      textAlign: "center",
     },
     controlsContainer: {
       position: "absolute",
