@@ -729,7 +729,7 @@ const BreathingView = ({ exercise, onBack }) => {
     const savedDuration = localStorage.getItem("breathDuration");
     return savedDuration ? parseInt(savedDuration) : 60;
   });
-  const [isMuted, setIsMuted] = useState(true); // Ahora siempre silenciado
+
   const [timeLeft, setTimeLeft] = useState(duration);
   const [remainingPhaseTime, setRemainingPhaseTime] = useState(0);
   const [cyclesCompleted, setCyclesCompleted] = useState(0);
@@ -793,10 +793,6 @@ const BreathingView = ({ exercise, onBack }) => {
   }, [duration]);
 
   useEffect(() => {
-    localStorage.setItem("isMuted", isMuted.toString());
-  }, [isMuted]);
-
-  useEffect(() => {
     if (!isActive) return;
 
     timerRef.current = setInterval(() => {
@@ -857,7 +853,6 @@ const BreathingView = ({ exercise, onBack }) => {
   }, [
     isActive,
     phase,
-    isMuted,
     phaseDurations,
     phaseColors,
     duration,
