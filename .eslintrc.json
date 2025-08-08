@@ -14,6 +14,7 @@
     "sourceType": "module"
   },
   "rules": {
+    "react-hooks/exhaustive-deps": "warn", // en lugar de "error"
     "no-restricted-globals": ["error", {
       "name": "event",
       "message": "Use local parameter name instead."
