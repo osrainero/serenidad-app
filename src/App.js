@@ -282,6 +282,10 @@ const MainApp = () => {
     setIsDrawerOpen(false);
   }, []);
 
+  const onBack = useCallback(() => {
+    setCurrentScreen("home");
+  }, []);
+
   const startExercise = (exerciseKey) => {
     setSelectedExercise(exerciseKey);
     setCurrentScreen("breathing");
@@ -297,10 +301,7 @@ const MainApp = () => {
         return <ThemesScreen />;
       case "breathing":
         return (
-          <BreathingView
-            exercise={exercises[selectedExercise]}
-            onBack={() => setCurrentScreen("home")}
-          />
+          <BreathingView exercise={exercises[selectedExercise]} onBack={onBack} />
         );
       default:
         return <HomeScreen onStart={startExercise} />;
@@ -310,17 +311,6 @@ const MainApp = () => {
   useEffect(() => {
     document.body.style.backgroundColor = theme.background;
     document.body.style.color = theme.text;
-  }, [theme]);
-
-  useEffect(() => {
-    if (theme.name === "Material You") {
-      document.documentElement.style.setProperty("--primary", "#E879F9");
-      document.documentElement.style.setProperty("--background", "#241A2E");
-      document.documentElement.style.setProperty("--card", "#3B2C4A");
-      document.documentElement.style.setProperty("--text", "#F3E8FF");
-      document.documentElement.style.setProperty("--text-secondary", "#D9C2ED");
-      document.documentElement.style.setProperty("--border", "#58456B");
-    }
   }, [theme]);
 
   const styles = getStyles(theme);
@@ -340,7 +330,6 @@ const MainApp = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3 }}
           style={{ width: "100%" }}
         >
           {renderScreen()}
@@ -575,10 +564,15 @@ const BreathingView = ({ exercise, onBack }) => {
     const savedDuration = localStorage.getItem("breathDuration");
     return savedDuration ? parseInt(savedDuration) : 60;
   });
-
   const [timeLeft, setTimeLeft] = useState(duration);
-  const [remainingPhaseTime, setRemainingPhaseTime] = useState(0);
   const [cyclesCompleted, setCyclesCompleted] = useState(0);
+  const [circleStyle, setCircleStyle] = useState({
+    scale: 1,
+    background: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
+    borderWidth: "8px",
+    transform: "rotate(0deg)",
+  });
+
   const timerRef = useRef(null);
 
   const phaseDurations = useMemo(
@@ -591,17 +585,6 @@ const BreathingView = ({ exercise, onBack }) => {
     [exercise.timings]
   );
 
-  const phaseColors = useMemo(
-    () => ({
-      ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
-      inhale: exercise.colors.inhale,
-      hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
-      exhale: exercise.colors.exhale,
-      holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
-    }),
-    [exercise.colors, theme]
-  );
-
   const phaseInstructions = {
     ready: "Preparado",
     inhale: "Inhala",
@@ -610,19 +593,21 @@ const BreathingView = ({ exercise, onBack }) => {
     holdAfter: "Espera",
   };
 
-  const [circleStyle, setCircleStyle] = useState({
-    background: phaseColors.ready,
-    scale: 1,
-  });
+  const phaseColors = {
+    ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
+    inhale: exercise.colors.inhale,
+    exhale: exercise.colors.exhale,
+    hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
+    holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
+  };
 
   const startBreathingCycle = useCallback(() => {
     setIsActive(true);
     setPhase("inhale");
-    setRemainingPhaseTime(phaseDurations.inhale);
     setTimeLeft(duration);
     setCyclesCompleted(0);
     if (navigator.vibrate) navigator.vibrate(100);
-  }, [phaseDurations.inhale, duration]);
+  }, [duration]);
 
   const stopBreathingCycle = useCallback(() => {
     clearInterval(timerRef.current);
@@ -631,6 +616,7 @@ const BreathingView = ({ exercise, onBack }) => {
     setCircleStyle({
       background: phaseColors.ready,
       scale: 1,
+      transform: "rotate(0deg)",
     });
   }, [phaseColors.ready]);
 
@@ -642,78 +628,80 @@ const BreathingView = ({ exercise, onBack }) => {
     if (!isActive) return;
 
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          stopBreathingCycle();
-          return duration;
+      setTimeLeft((prevTimeLeft) => {
+        const newTimeLeft = prevTimeLeft - 1;
+
+        // Calcular el progreso total de la sesión
+        const sessionProgress = 1 - newTimeLeft / duration;
+        const rotation = sessionProgress * 360;
+
+        // Determinar la fase actual basada en el tiempo transcurrido
+        const totalPhaseTime =
+          phaseDurations.inhale +
+          phaseDurations.hold +
+          phaseDurations.exhale +
+          phaseDurations.holdAfter;
+
+        const elapsedTime = duration - newTimeLeft;
+        const currentPhaseTime = elapsedTime % totalPhaseTime;
+
+        let currentPhase = phase;
+        if (currentPhaseTime < phaseDurations.inhale) {
+          currentPhase = "inhale";
+        } else if (
+          currentPhaseTime <
+          phaseDurations.inhale + phaseDurations.hold
+        ) {
+          currentPhase = "hold";
+        } else if (
+          currentPhaseTime <
+          phaseDurations.inhale + phaseDurations.hold + phaseDurations.exhale
+        ) {
+          currentPhase = "exhale";
+        } else {
+          currentPhase = "holdAfter";
         }
-        return prev - 1;
-      });
 
-      setRemainingPhaseTime((prev) => {
-        if (prev <= 1) {
-          let nextPhase;
-
-          if (phase === "inhale") {
-            nextPhase = "hold";
-          } else if (phase === "hold") {
-            nextPhase = "exhale";
-          } else if (phase === "exhale") {
-            if (phaseDurations.holdAfter > 0) {
-              nextPhase = "holdAfter";
-            } else {
-              nextPhase = "inhale";
-              setCyclesCompleted((c) => c + 1);
-            }
-          } else {
-            nextPhase = "inhale";
-            setCyclesCompleted((c) => c + 1);
-          }
-
-          setPhase(nextPhase);
-          return phaseDurations[nextPhase];
+        if (currentPhase !== phase) {
+          setPhase(currentPhase);
+          if (navigator.vibrate) navigator.vibrate(50);
         }
-        return prev - 1;
-      });
 
-      const scaleValue =
-        phase === "inhale" ? 1.1 : phase === "exhale" ? 0.9 : 1;
-      setCircleStyle({
-        background: phaseColors[phase],
-        scale: scaleValue,
-        transition: `all ${
-          phase === "inhale"
-            ? phaseDurations.inhale
-            : phase === "exhale"
-            ? phaseDurations.exhale
-            : 0.5
-        }s ease-in-out`,
-      });
+        // Actualizar el estilo del círculo basado en la fase
+        setCircleStyle({
+          background: phaseColors[currentPhase],
+          scale:
+            currentPhase === "inhale"
+              ? 1.1
+              : currentPhase === "exhale"
+              ? 0.9
+              : 1,
+          transform: `rotate(${rotation}deg)`,
+        });
 
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
+        if (newTimeLeft <= 0) {
+          clearInterval(timerRef.current);
+          setIsActive(false);
+          setPhase("ready");
+          setCircleStyle({
+            background: phaseColors.ready,
+            scale: 1,
+            transform: "rotate(0deg)",
+          });
+          return 0;
+        }
+
+        return newTimeLeft;
+      });
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [
-    isActive,
-    phase,
-    phaseDurations,
-    phaseColors,
-    duration,
-    stopBreathingCycle,
-  ]);
+  }, [isActive, phaseDurations, duration, phaseColors]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const getPhaseProgress = () => {
-    const total = phaseDurations[phase];
-    return ((total - remainingPhaseTime) / total) * 100;
   };
 
   return (
@@ -727,38 +715,35 @@ const BreathingView = ({ exercise, onBack }) => {
       </button>
 
       <div style={styles.breathing.circleContainer}>
+        <div
+          style={{
+            position: "absolute",
+            width: "300px",
+            height: "300px",
+            borderRadius: "50%",
+            border: `10px solid ${theme.border}`,
+            borderTopColor: theme.primary,
+            transform: `rotate(${(timeLeft / duration) * 360}deg)`,
+            transition: "transform 1s linear",
+          }}
+        />
+
         <motion.div
-          style={styles.breathing.circle}
-          animate={{
-            scale: circleStyle.scale,
+          style={{
+            ...styles.breathing.circle,
             background: circleStyle.background,
+            scale: circleStyle.scale,
+            borderWidth: circleStyle.borderWidth,
+            transform: circleStyle.transform,
           }}
-          transition={{
-            scale: {
-              duration:
-                phase === "inhale"
-                  ? phaseDurations.inhale
-                  : phase === "exhale"
-                  ? phaseDurations.exhale
-                  : 0.5,
-            },
-            background: { duration: 0.5 },
-          }}
+          transition={{ duration: 0.5 }}
         >
           <span style={styles.breathing.phaseText}>
             {phaseInstructions[phase]}
           </span>
-          <div style={styles.breathing.phaseTime}>{remainingPhaseTime}s</div>
-
-          {isActive && (
-            <div style={styles.breathing.progressBarContainer}>
-              <motion.div
-                style={styles.breathing.progressBar}
-                animate={{ width: `${getPhaseProgress()}%` }}
-                transition={{ duration: 1 }}
-              />
-            </div>
-          )}
+          <div style={styles.breathing.phaseTime}>
+            {formatTime(timeLeft)} / {formatTime(duration)}
+          </div>
         </motion.div>
       </div>
 
@@ -1204,12 +1189,15 @@ const getStyles = (theme) => ({
       alignItems: "center",
       justifyContent: "center",
       width: "100%",
-      marginTop: "-50px",
+      marginTop: "-200px", // Posicion del circulo... (era -50 originalmente)
+      position: "relative",
     },
     circle: {
       width: "250px",
       height: "250px",
       borderRadius: "50%",
+      border: `8px solid ${theme.border}`, // Borde base
+      borderTopColor: theme.primary, // Color de progreso
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -1232,13 +1220,7 @@ const getStyles = (theme) => ({
       textShadow: "0 2px 4px rgba(0,0,0,0.2)",
     },
     progressBarContainer: {
-      position: "absolute",
-      bottom: "40px",
-      width: "80%",
-      height: "4px",
-      backgroundColor: "rgba(255,255,255,0.2)",
-      borderRadius: "2px",
-      overflow: "hidden",
+      display: "none",
     },
     progressBar: {
       height: "100%",
