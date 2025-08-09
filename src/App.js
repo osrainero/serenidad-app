@@ -4,7 +4,7 @@ import React, {
   useRef,
   createContext,
   useContext,
-  useMemo,
+  //useMemo,
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -301,7 +301,10 @@ const MainApp = () => {
         return <ThemesScreen />;
       case "breathing":
         return (
-          <BreathingView exercise={exercises[selectedExercise]} onBack={onBack} />
+          <BreathingView
+            exercise={exercises[selectedExercise]}
+            onBack={onBack}
+          />
         );
       default:
         return <HomeScreen onStart={startExercise} />;
@@ -558,6 +561,8 @@ const ThemesScreen = () => {
 const BreathingView = ({ exercise, onBack }) => {
   const { theme } = useContext(ThemeContext);
   const styles = getStyles(theme);
+  
+  // Estados
   const [phase, setPhase] = useState("ready");
   const [isActive, setIsActive] = useState(false);
   const [duration, setDuration] = useState(() => {
@@ -565,25 +570,20 @@ const BreathingView = ({ exercise, onBack }) => {
     return savedDuration ? parseInt(savedDuration) : 60;
   });
   const [timeLeft, setTimeLeft] = useState(duration);
-  const [cyclesCompleted, setCyclesCompleted] = useState(0);
+  const [progressPercentage, setProgressPercentage] = useState(0);
   const [circleStyle, setCircleStyle] = useState({
     scale: 1,
     background: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
-    borderWidth: "8px",
-    transform: "rotate(0deg)",
   });
-
   const timerRef = useRef(null);
 
-  const phaseDurations = useMemo(
-    () => ({
-      inhale: exercise.timings.inhale,
-      hold: exercise.timings.hold,
-      exhale: exercise.timings.exhale,
-      holdAfter: exercise.timings.holdAfter,
-    }),
-    [exercise.timings]
-  );
+  // Configuración de fases
+  const phaseDurations = {
+    inhale: exercise.timings.inhale,
+    hold: exercise.timings.hold,
+    exhale: exercise.timings.exhale,
+    holdAfter: exercise.timings.holdAfter,
+  };
 
   const phaseInstructions = {
     ready: "Preparado",
@@ -601,62 +601,53 @@ const BreathingView = ({ exercise, onBack }) => {
     holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
   };
 
+  // Iniciar ciclo
   const startBreathingCycle = useCallback(() => {
     setIsActive(true);
     setPhase("inhale");
     setTimeLeft(duration);
-    setCyclesCompleted(0);
+    setProgressPercentage(0);
     if (navigator.vibrate) navigator.vibrate(100);
   }, [duration]);
 
+  // Detener ciclo
   const stopBreathingCycle = useCallback(() => {
     clearInterval(timerRef.current);
     setIsActive(false);
     setPhase("ready");
     setCircleStyle({
-      background: phaseColors.ready,
       scale: 1,
-      transform: "rotate(0deg)",
+      background: phaseColors.ready,
     });
+    setProgressPercentage(0);
   }, [phaseColors.ready]);
 
-  useEffect(() => {
-    localStorage.setItem("breathDuration", duration.toString());
-  }, [duration]);
-
+  // Temporizador principal
   useEffect(() => {
     if (!isActive) return;
 
     timerRef.current = setInterval(() => {
-      setTimeLeft((prevTimeLeft) => {
-        const newTimeLeft = prevTimeLeft - 1;
+      setTimeLeft(prev => {
+        const newTimeLeft = prev - 1;
+        const newProgress = ((duration - newTimeLeft) / duration) * 100;
+        setProgressPercentage(newProgress);
 
-        // Calcular el progreso total de la sesión
-        const sessionProgress = 1 - newTimeLeft / duration;
-        const rotation = sessionProgress * 360;
-
-        // Determinar la fase actual basada en el tiempo transcurrido
-        const totalPhaseTime =
-          phaseDurations.inhale +
-          phaseDurations.hold +
-          phaseDurations.exhale +
+        // Cambio de fases basado en tiempo transcurrido
+        const totalPhaseTime = 
+          phaseDurations.inhale + 
+          phaseDurations.hold + 
+          phaseDurations.exhale + 
           phaseDurations.holdAfter;
-
+        
         const elapsedTime = duration - newTimeLeft;
         const currentPhaseTime = elapsedTime % totalPhaseTime;
-
+        
         let currentPhase = phase;
         if (currentPhaseTime < phaseDurations.inhale) {
           currentPhase = "inhale";
-        } else if (
-          currentPhaseTime <
-          phaseDurations.inhale + phaseDurations.hold
-        ) {
+        } else if (currentPhaseTime < phaseDurations.inhale + phaseDurations.hold) {
           currentPhase = "hold";
-        } else if (
-          currentPhaseTime <
-          phaseDurations.inhale + phaseDurations.hold + phaseDurations.exhale
-        ) {
+        } else if (currentPhaseTime < phaseDurations.inhale + phaseDurations.hold + phaseDurations.exhale) {
           currentPhase = "exhale";
         } else {
           currentPhase = "holdAfter";
@@ -667,27 +658,15 @@ const BreathingView = ({ exercise, onBack }) => {
           if (navigator.vibrate) navigator.vibrate(50);
         }
 
-        // Actualizar el estilo del círculo basado en la fase
+        // Animación del círculo
         setCircleStyle({
+          scale: currentPhase === "inhale" ? 1.1 : currentPhase === "exhale" ? 0.9 : 1,
           background: phaseColors[currentPhase],
-          scale:
-            currentPhase === "inhale"
-              ? 1.1
-              : currentPhase === "exhale"
-              ? 0.9
-              : 1,
-          transform: `rotate(${rotation}deg)`,
         });
 
         if (newTimeLeft <= 0) {
           clearInterval(timerRef.current);
           setIsActive(false);
-          setPhase("ready");
-          setCircleStyle({
-            background: phaseColors.ready,
-            scale: 1,
-            transform: "rotate(0deg)",
-          });
           return 0;
         }
 
@@ -696,12 +675,60 @@ const BreathingView = ({ exercise, onBack }) => {
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [isActive, phaseDurations, duration, phaseColors]);
+  }, [isActive, duration, phaseDurations, phaseColors]);
 
+  // Formatear tiempo
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Renderizar progressbar circular SVG
+  const renderProgressCircle = () => {
+    const radius = 140;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+    const rotation = -90; // Comienza en la parte superior (12 en punto)
+
+    return (
+      <svg 
+        width="300" 
+        height="300" 
+        viewBox="0 0 300 300"
+        style={{
+          position: 'absolute',
+          transform: `rotate(${rotation}deg)`
+        }}
+      >
+        {/* Círculo de fondo (gris) */}
+        <circle
+          cx="150"
+          cy="150"
+          r={radius}
+          fill="none"
+          stroke={theme.border}
+          strokeWidth="10"
+        />
+        
+        {/* Círculo de progreso (color primario) */}
+        <circle
+          cx="150"
+          cy="150"
+          r={radius}
+          fill="none"
+          stroke={theme.primary}
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          transform="rotate(-90 150 150)"
+          style={{
+            transition: 'stroke-dashoffset 1s linear'
+          }}
+        />
+      </svg>
+    );
   };
 
   return (
@@ -715,26 +742,14 @@ const BreathingView = ({ exercise, onBack }) => {
       </button>
 
       <div style={styles.breathing.circleContainer}>
-        <div
-          style={{
-            position: "absolute",
-            width: "300px",
-            height: "300px",
-            borderRadius: "50%",
-            border: `10px solid ${theme.border}`,
-            borderTopColor: theme.primary,
-            transform: `rotate(${(timeLeft / duration) * 360}deg)`,
-            transition: "transform 1s linear",
-          }}
-        />
+        {/* Progressbar circular */}
+        {renderProgressCircle()}
 
+        {/* Círculo principal */}
         <motion.div
           style={{
             ...styles.breathing.circle,
-            background: circleStyle.background,
-            scale: circleStyle.scale,
-            borderWidth: circleStyle.borderWidth,
-            transform: circleStyle.transform,
+            ...circleStyle,
           }}
           transition={{ duration: 0.5 }}
         >
@@ -742,19 +757,13 @@ const BreathingView = ({ exercise, onBack }) => {
             {phaseInstructions[phase]}
           </span>
           <div style={styles.breathing.phaseTime}>
-            {formatTime(timeLeft)} / {formatTime(duration)}
+            {formatTime(timeLeft)}
           </div>
         </motion.div>
       </div>
 
       {isActive ? (
         <div style={styles.breathing.activeControls}>
-          <div style={styles.breathing.timerDisplay}>
-            {formatTime(timeLeft)}
-          </div>
-          <div style={styles.breathing.cyclesCounter}>
-            Ciclos completados: {cyclesCompleted}
-          </div>
           <button
             style={styles.breathing.stopButton}
             onClick={stopBreathingCycle}
@@ -794,7 +803,6 @@ const BreathingView = ({ exercise, onBack }) => {
     </div>
   );
 };
-
 // --- FUNCIÓN DE ESTILOS DINÁMICOS ---
 const getStyles = (theme) => ({
   appContainer: {
