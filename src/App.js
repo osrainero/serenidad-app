@@ -8,7 +8,6 @@ import React, {
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import RemindersScreen from './screens/RemindersScreen';
 
 export const ThemeContext = createContext();
 
@@ -294,8 +293,6 @@ const MainApp = () => {
         return <HomeScreen onStart={startExercise} />;
       case "help":
         return <HelpScreen />;
-      case 'reminders': 
-        return <RemindersScreen />;
       case "themes":
         return <ThemesScreen />;
       case "breathing":
@@ -414,8 +411,7 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
             >
               {screen === "home" && "Prácticas"}
               {screen === "help" && "Guía de Ayuda"}
-              {screen === "reminders" && "Recordatorios"}
-              {screen === "themes" && "Temas"}
+               {screen === "themes" && "Temas"}
             </button>
           ))}
         </nav>
