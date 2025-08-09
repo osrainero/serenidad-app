@@ -411,7 +411,7 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
             >
               {screen === "home" && "Prácticas"}
               {screen === "help" && "Guía de Ayuda"}
-               {screen === "themes" && "Temas"}
+              {screen === "themes" && "Temas"}
             </button>
           ))}
         </nav>
@@ -489,14 +489,19 @@ const HelpScreen = () => {
               </motion.span>
             </button>
             <div
-              id={`accordion-content-${index}`}
               style={{
                 ...styles.help.accordionContent,
-                maxHeight: openIndex === index ? "250px" : "0px",
-                padding: openIndex === index ? "20px" : "0 20px",
+                maxHeight: openIndex === index ? "1000px" : "0px",
+                padding: openIndex === index ? "15px 20px" : "0 20px",
               }}
             >
-              <p style={{ whiteSpace: "pre-line" }}>{item.content}</p>
+              <div style={{ padding: "5px 0" }}>
+                {item.content.split("\n").map((paragraph, i) => (
+                  <p key={i} style={{ margin: "8px 0" }}>
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
             </div>
           </motion.div>
         ))}
@@ -1069,6 +1074,12 @@ const getStyles = (theme) => ({
       color: theme.textSecondary,
       lineHeight: "1.6",
       borderTop: `1px solid ${theme.border}`,
+      maxHeight: "500px", // Aumenta este valor
+      padding: "0 20px",
+      // Nuevas propiedades para móvil:
+      whiteSpace: "pre-wrap",
+      wordBreak: "break-word",
+      overflowY: "auto",
     },
   },
   reminders: {
