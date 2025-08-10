@@ -8,8 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import './App.css';
-
+import "./App.css";
 
 const staticThemes = {
   serenidad: {
@@ -47,7 +46,7 @@ const staticThemes = {
     text: "#FFEDD5",
     textSecondary: "#D4B8B0",
     border: "#5C3A3F",
-  }
+  },
 };
 
 // --- ICONOS SVG ---
@@ -177,14 +176,14 @@ const CheckIcon = () => (
 
 export const ThemeContext = createContext({
   theme: staticThemes.serenidad, // Valor por defecto
-  changeTheme: () => {} // Función vacía por defecto
+  changeTheme: () => {}, // Función vacía por defecto
 });
 
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("appTheme");
-    return savedTheme && staticThemes[savedTheme] 
-      ? staticThemes[savedTheme] 
+    return savedTheme && staticThemes[savedTheme]
+      ? staticThemes[savedTheme]
       : staticThemes.serenidad;
   });
 
@@ -198,9 +197,7 @@ const ThemeProvider = ({ children }) => {
   const value = useMemo(() => ({ theme, changeTheme }), [theme, changeTheme]);
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 };
 
@@ -265,8 +262,6 @@ const App = () => {
   );
 };
 
-
-
 const MainApp = () => {
   const { theme = staticThemes.serenidad } = useContext(ThemeContext); // Valor por defecto
   const [currentScreen, setCurrentScreen] = useState("home");
@@ -316,7 +311,6 @@ const MainApp = () => {
     document.body.style.backgroundColor = theme.background;
     document.body.style.color = theme.text;
   }, [theme]);
-
 
   return (
     <div style={getStyles(theme).appContainer}>
@@ -675,34 +669,6 @@ const BreathingView = ({ exercise, onBack }) => {
     ]
   );
 
-  //const { primary, card, border, background } = theme; // Destructuración
-  const phaseColors = React.useMemo(
-    () => ({
-      ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
-      inhale: exercise.colors.inhale,
-      exhale: exercise.colors.exhale,
-      hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
-      holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
-    }),
-    [
-      theme.card,
-      theme.background,
-      theme.primary,
-      theme.border,
-      exercise.colors.inhale,
-      exercise.colors.exhale,
-    ]
-  );
-
-  // Estilo del círculo (derivado del estado)
-  const circleStyle = useMemo(
-    () => ({
-      scale: phase === "inhale" ? 1.1 : phase === "exhale" ? 0.9 : 1,
-      background: phaseColors[phase],
-    }),
-    [phase, phaseColors]
-  );
-
   // Funciones memoizadas
   const startBreathingCycle = useCallback(() => {
     setIsActive(true);
@@ -846,8 +812,14 @@ const BreathingView = ({ exercise, onBack }) => {
         {/* Círculo principal */}
         <motion.div
           style={{
-            ...styles.breathing.circle,
-            ...circleStyle,
+            position: "absolute",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          animate={{
+            scale: phase === "inhale" ? 1.1 : phase === "exhale" ? 0.9 : 1,
           }}
           transition={{ duration: 0.5 }}
         >
@@ -1296,7 +1268,7 @@ const getStyles = (theme) => ({
       marginTop: "-200px", // Posicion del circulo... (era -50 originalmente)
       position: "relative",
     },
-    circle: {
+    circleeee: {
       width: "250px",
       height: "250px",
       borderRadius: "50%",
