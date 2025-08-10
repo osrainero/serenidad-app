@@ -197,13 +197,29 @@ const ThemeProvider = ({ children }) => {
     return savedTheme ? themes[savedTheme] : themes.serenidad;
   });
 
-  const changeTheme = (themeName) => {
-    setTheme(themes[themeName]);
-    localStorage.setItem("appTheme", themeName);
-  };
+  const updateMaterialYouTheme = useCallback((dominantColor) => {
+    // Calcula la paleta basada en el color dominante
+    const newPalette = generateMaterialPalette(dominantColor);
+    
+    // Aplica los nuevos colores
+    document.documentElement.style.setProperty('--primary', newPalette.primary);
+    document.documentElement.style.setProperty('--background', newPalette.background);
+    document.documentElement.style.setProperty('--card', newPalette.surface);
+    document.documentElement.style.setProperty('--text', newPalette.onSurface);
+    document.documentElement.style.setProperty('--border', newPalette.outline);
+
+    // Actualiza el tema si está activo
+    if (theme.name === "Material You") {
+      setTheme(themes.dinamico);
+    }
+  }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, changeTheme }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      changeTheme, 
+      updateMaterialYouTheme 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -366,7 +382,7 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div style={styles.header.titleContainer}>
         <LogoIcon color={theme.primary} />
-        <h1 style={styles.header.title}>Serenidad V1.3</h1>
+        <h1 style={styles.header.title}>Serenidad V1.4</h1>
       </div>
     </div>
   );
@@ -375,6 +391,7 @@ const Header = ({ onMenuClick }) => {
 const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
   const { theme } = useContext(ThemeContext);
   
+  // Estilos corregidos para Material You
   const styles = {
     drawer: {
       container: {
@@ -383,10 +400,16 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         left: 0,
         width: "280px",
         height: "100%",
-        backgroundColor: theme.name === "Material You" ? "var(--card)" : theme.card,
+        backgroundColor: theme.name === "Material You" 
+          ? "var(--card, #3B2C4A)"  // Fallback por si no existe la variable
+          : theme.card,
         zIndex: 20,
         padding: "60px 20px",
-        borderRight: `1px solid ${theme.name === "Material You" ? "var(--border)" : theme.border}`,
+        borderRight: `1px solid ${
+          theme.name === "Material You" 
+            ? "var(--border, #58456B)" 
+            : theme.border
+        }`,
         willChange: "transform"
       },
       overlay: {
@@ -405,7 +428,9 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         right: "16px",
         background: "none",
         border: "none",
-        color: theme.name === "Material You" ? "var(--text)" : theme.text,
+        color: theme.name === "Material You" 
+          ? "var(--text, #F3E8FF)" 
+          : theme.text,
         cursor: "pointer",
         padding: "8px",
         borderRadius: "50%",
@@ -413,7 +438,9 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         alignItems: "center",
         justifyContent: "center",
         ":hover": {
-          backgroundColor: theme.name === "Material You" ? "var(--primary)" : theme.primary + "20"
+          backgroundColor: (theme.name === "Material You" 
+            ? "var(--primary, #E879F9)" 
+            : theme.primary) + "20"
         }
       },
       navLink: {
@@ -422,7 +449,9 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         padding: "16px",
         background: "none",
         border: "none",
-        color: theme.name === "Material You" ? "var(--text)" : theme.text,
+        color: theme.name === "Material You" 
+          ? "var(--text, #F3E8FF)" 
+          : theme.text,
         fontSize: "1.1rem",
         textAlign: "left",
         borderRadius: "12px",
@@ -430,11 +459,9 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         marginBottom: "8px",
         transition: "all 0.2s ease",
         ":hover": {
-          backgroundColor: (theme.name === "Material You" ? "var(--primary)" : theme.primary) + "20"
-        },
-        ":focus": {
-          outline: "none",
-          boxShadow: `0 0 0 2px ${theme.name === "Material You" ? "var(--primary)" : theme.primary}40`
+          backgroundColor: (theme.name === "Material You" 
+            ? "var(--primary, #E879F9)" 
+            : theme.primary) + "20"
         }
       }
     }
