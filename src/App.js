@@ -374,7 +374,71 @@ const Header = ({ onMenuClick }) => {
 
 const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
   const { theme } = useContext(ThemeContext);
-  const styles = getStyles(theme);
+  
+  const styles = {
+    drawer: {
+      container: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "280px",
+        height: "100%",
+        backgroundColor: theme.name === "Material You" ? "var(--card)" : theme.card,
+        zIndex: 20,
+        padding: "60px 20px",
+        borderRight: `1px solid ${theme.name === "Material You" ? "var(--border)" : theme.border}`,
+        willChange: "transform"
+      },
+      overlay: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 15,
+        willChange: "opacity"
+      },
+      closeButton: {
+        position: "absolute",
+        top: "16px",
+        right: "16px",
+        background: "none",
+        border: "none",
+        color: theme.name === "Material You" ? "var(--text)" : theme.text,
+        cursor: "pointer",
+        padding: "8px",
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        ":hover": {
+          backgroundColor: theme.name === "Material You" ? "var(--primary)" : theme.primary + "20"
+        }
+      },
+      navLink: {
+        display: "block",
+        width: "100%",
+        padding: "16px",
+        background: "none",
+        border: "none",
+        color: theme.name === "Material You" ? "var(--text)" : theme.text,
+        fontSize: "1.1rem",
+        textAlign: "left",
+        borderRadius: "12px",
+        cursor: "pointer",
+        marginBottom: "8px",
+        transition: "all 0.2s ease",
+        ":hover": {
+          backgroundColor: (theme.name === "Material You" ? "var(--primary)" : theme.primary) + "20"
+        },
+        ":focus": {
+          outline: "none",
+          boxShadow: `0 0 0 2px ${theme.name === "Material You" ? "var(--primary)" : theme.primary}40`
+        }
+      }
+    }
+  };
 
   return (
     <>
