@@ -559,6 +559,10 @@ const ThemesScreen = () => {
 };
 
 const BreathingView = ({ exercise, onBack }) => {
+  const { theme } = useContext(ThemeContext);
+  const styles = getStyles(theme);
+
+  // Estados
   const [phase, setPhase] = useState("ready");
   const [isActive, setIsActive] = useState(false);
   const [duration, setDuration] = useState(() => {
@@ -567,37 +571,62 @@ const BreathingView = ({ exercise, onBack }) => {
   });
   const [timeLeft, setTimeLeft] = useState(duration);
   const [progressPercentage, setProgressPercentage] = useState(0);
-  const [circleStyle, setCircleStyle] = useState({
-    scale: 1,
-    background: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
-  });
   const timerRef = useRef(null);
 
-  // Configuración de fases
-  const phaseDurations = useMemo(() => ({
-    inhale: exercise.timings.inhale,
-    hold: exercise.timings.hold,
-    exhale: exercise.timings.exhale,
-    holdAfter: exercise.timings.holdAfter,
-  }), [exercise.timings]);
-
-  const phaseInstructions = useMemo(() => ({
+  // Objetos estáticos (no cambian entre renders)
+  const phaseInstructions = {
     ready: "Preparado",
     inhale: "Inhala",
     hold: "Mantén",
     exhale: "Exhala",
     holdAfter: "Espera",
-  }), []);
+  };
 
-  const phaseColors = useMemo(() => ({
-    ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
-    inhale: exercise.colors.inhale,
-    exhale: exercise.colors.exhale,
-    hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
-    holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
-  }), [exercise.colors, theme]);
+  // Memoización optimizada
+  const phaseDurations = useMemo(
+    () => ({
+      inhale: exercise.timings.inhale,
+      hold: exercise.timings.hold,
+      exhale: exercise.timings.exhale,
+      holdAfter: exercise.timings.holdAfter,
+    }),
+    [
+      exercise.timings.inhale,
+      exercise.timings.hold,
+      exercise.timings.exhale,
+      exercise.timings.holdAfter,
+    ]
+  );
 
-  // Iniciar ciclo
+  const { primary, card, border, background } = theme; // Destructuración
+  const phaseColors = useMemo(
+    () => ({
+      ready: `radial-gradient(circle, ${card}, ${background})`,
+      inhale: exercise.colors.inhale,
+      exhale: exercise.colors.exhale,
+      hold: `radial-gradient(circle, ${primary}, ${card})`,
+      holdAfter: `radial-gradient(circle, ${border}, ${card})`,
+    }),
+    [
+      primary,
+      card,
+      border,
+      background,
+      exercise.colors.inhale,
+      exercise.colors.exhale,
+    ]
+  );
+
+  // Estilo del círculo (derivado del estado)
+  const circleStyle = useMemo(
+    () => ({
+      scale: phase === "inhale" ? 1.1 : phase === "exhale" ? 0.9 : 1,
+      background: phaseColors[phase],
+    }),
+    [phase, phaseColors]
+  );
+
+  // Funciones memoizadas
   const startBreathingCycle = useCallback(() => {
     setIsActive(true);
     setPhase("inhale");
@@ -606,59 +635,54 @@ const BreathingView = ({ exercise, onBack }) => {
     if (navigator.vibrate) navigator.vibrate(100);
   }, [duration]);
 
-  // Detener ciclo
   const stopBreathingCycle = useCallback(() => {
     clearInterval(timerRef.current);
     setIsActive(false);
     setPhase("ready");
-    setCircleStyle({
-      scale: 1,
-      background: phaseColors.ready,
-    });
     setProgressPercentage(0);
-  }, [phaseColors.ready]);
+  }, []);
 
   // Temporizador principal
+  // Efecto principal optimizado
   useEffect(() => {
     if (!isActive) return;
 
+    const totalPhaseTime =
+      phaseDurations.inhale +
+      phaseDurations.hold +
+      phaseDurations.exhale +
+      phaseDurations.holdAfter;
+
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        const newTimeLeft = prev - 1;
+      setTimeLeft((prevTime) => {
+        const newTimeLeft = prevTime - 1;
         const newProgress = ((duration - newTimeLeft) / duration) * 100;
         setProgressPercentage(newProgress);
 
-        // Cambio de fases basado en tiempo transcurrido
-        const totalPhaseTime = 
-          phaseDurations.inhale + 
-          phaseDurations.hold + 
-          phaseDurations.exhale + 
-          phaseDurations.holdAfter;
-        
         const elapsedTime = duration - newTimeLeft;
         const currentPhaseTime = elapsedTime % totalPhaseTime;
-        
-        let currentPhase = phase;
+
+        let newPhase;
         if (currentPhaseTime < phaseDurations.inhale) {
-          currentPhase = "inhale";
-        } else if (currentPhaseTime < phaseDurations.inhale + phaseDurations.hold) {
-          currentPhase = "hold";
-        } else if (currentPhaseTime < phaseDurations.inhale + phaseDurations.hold + phaseDurations.exhale) {
-          currentPhase = "exhale";
+          newPhase = "inhale";
+        } else if (
+          currentPhaseTime <
+          phaseDurations.inhale + phaseDurations.hold
+        ) {
+          newPhase = "hold";
+        } else if (
+          currentPhaseTime <
+          phaseDurations.inhale + phaseDurations.hold + phaseDurations.exhale
+        ) {
+          newPhase = "exhale";
         } else {
-          currentPhase = "holdAfter";
+          newPhase = "holdAfter";
         }
 
-        if (currentPhase !== phase) {
-          setPhase(currentPhase);
+        if (newPhase !== phase) {
+          setPhase(newPhase);
           if (navigator.vibrate) navigator.vibrate(50);
         }
-
-        // Animación del círculo
-        setCircleStyle({
-          scale: currentPhase === "inhale" ? 1.1 : currentPhase === "exhale" ? 0.9 : 1,
-          background: phaseColors[currentPhase],
-        });
 
         if (newTimeLeft <= 0) {
           clearInterval(timerRef.current);
@@ -671,7 +695,7 @@ const BreathingView = ({ exercise, onBack }) => {
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [isActive, duration, phaseDurations, phaseColors, phase]);
+  }, [isActive, duration, phaseDurations, phase]);
 
   // Formatear tiempo
   const formatTime = (seconds) => {
@@ -684,17 +708,18 @@ const BreathingView = ({ exercise, onBack }) => {
   const renderProgressCircle = () => {
     const radius = 140;
     const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+    const strokeDashoffset =
+      circumference - (progressPercentage / 100) * circumference;
     const rotation = -90; // Comienza en la parte superior (12 en punto)
 
     return (
-      <svg 
-        width="300" 
-        height="300" 
+      <svg
+        width="300"
+        height="300"
         viewBox="0 0 300 300"
         style={{
-          position: 'absolute',
-          transform: `rotate(${rotation}deg)`
+          position: "absolute",
+          transform: `rotate(${rotation}deg)`,
         }}
       >
         {/* Círculo de fondo (gris) */}
@@ -706,7 +731,7 @@ const BreathingView = ({ exercise, onBack }) => {
           stroke={theme.border}
           strokeWidth="10"
         />
-        
+
         {/* Círculo de progreso (color primario) */}
         <circle
           cx="150"
@@ -720,7 +745,7 @@ const BreathingView = ({ exercise, onBack }) => {
           strokeDashoffset={strokeDashoffset}
           transform="rotate(-90 150 150)"
           style={{
-            transition: 'stroke-dashoffset 1s linear'
+            transition: "stroke-dashoffset 1s linear",
           }}
         />
       </svg>
@@ -752,9 +777,7 @@ const BreathingView = ({ exercise, onBack }) => {
           <span style={styles.breathing.phaseText}>
             {phaseInstructions[phase]}
           </span>
-          <div style={styles.breathing.phaseTime}>
-            {formatTime(timeLeft)}
-          </div>
+          <div style={styles.breathing.phaseTime}>{formatTime(timeLeft)}</div>
         </motion.div>
       </div>
 
