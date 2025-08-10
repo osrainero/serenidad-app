@@ -404,7 +404,7 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
           <CloseIcon />
         </button>
         <nav>
-          {["home", "help", "reminders", "themes"].map((screen) => (
+          {["home", "help", "themes"].map((screen) => (
             <button
               key={screen}
               style={styles.drawer.navLink}
