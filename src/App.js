@@ -4,7 +4,7 @@ import React, {
   useRef,
   createContext,
   useContext,
-  //useMemo,
+  useMemo,
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -274,7 +274,7 @@ const MainApp = () => {
   const { theme } = useContext(ThemeContext);
   const [currentScreen, setCurrentScreen] = useState("home");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState("relax");
+  const [selectedExercise, setSelectedExercise] = useState(null);
 
   const navigateTo = React.useCallback((screen) => {
     console.log("Navigating to:", screen); // Para debug
@@ -282,16 +282,17 @@ const MainApp = () => {
     setIsDrawerOpen(false);
   }, []);
 
-  const onBack = useCallback(() => {
-    setCurrentScreen("home");
-  }, []);
+  //const onBack = useCallback(() => {
+  //  setCurrentScreen("home");
+  //}, []);
 
-  const startExercise = (exerciseKey) => {
+  const startExercise = useCallback((exerciseKey) => {
     setSelectedExercise(exerciseKey);
     setCurrentScreen("breathing");
-  };
+  }, []);
 
-  const renderScreen = () => {
+  // Renderizado de pantallas
+  const renderScreen = useCallback(() => {
     switch (currentScreen) {
       case "home":
         return <HomeScreen onStart={startExercise} />;
@@ -300,26 +301,33 @@ const MainApp = () => {
       case "themes":
         return <ThemesScreen />;
       case "breathing":
-        return (
+        return selectedExercise ? ( // Verificación crítica
           <BreathingView
             exercise={exercises[selectedExercise]}
-            onBack={onBack}
+            onBack={() => setCurrentScreen("home")}
           />
+        ) : (
+          <div style={{ color: theme.text }}>
+            Error: No se seleccionó ejercicio
+            <button onClick={() => setCurrentScreen("home")}>
+              Volver al inicio
+            </button>
+          </div>
         );
       default:
         return <HomeScreen onStart={startExercise} />;
     }
-  };
+  }, [currentScreen, selectedExercise, theme.text, startExercise]);
 
   useEffect(() => {
     document.body.style.backgroundColor = theme.background;
     document.body.style.color = theme.text;
   }, [theme]);
 
-  const styles = getStyles(theme);
+  //const styles = getStyles(theme);
 
   return (
-    <div style={styles.appContainer}>
+    <div style={getStyles(theme).appContainer}>
       <Header onMenuClick={() => setIsDrawerOpen(true)} />
       <SideDrawer
         isOpen={isDrawerOpen}
@@ -333,7 +341,8 @@ const MainApp = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          style={{ width: "100%" }}
+          transition={{ duration: 0.3 }}
+          style={{ width: "100%", flex: 1 }}
         >
           {renderScreen()}
         </motion.div>
@@ -582,40 +591,35 @@ const BreathingView = ({ exercise, onBack }) => {
     holdAfter: "Espera",
   };
 
-  // Memoización optimizada
-  const phaseDurations = useMemo(
-    () => ({
-      inhale: exercise.timings.inhale,
-      hold: exercise.timings.hold,
-      exhale: exercise.timings.exhale,
-      holdAfter: exercise.timings.holdAfter,
-    }),
-    [
-      exercise.timings.inhale,
-      exercise.timings.hold,
-      exercise.timings.exhale,
-      exercise.timings.holdAfter,
-    ]
-  );
+  // Memoización corregida
+  const phaseDurations = React.useMemo(() => ({
+    inhale: exercise.timings.inhale,
+    hold: exercise.timings.hold,
+    exhale: exercise.timings.exhale,
+    holdAfter: exercise.timings.holdAfter,
+  }), [
+    exercise.timings.inhale, 
+    exercise.timings.hold, 
+    exercise.timings.exhale, 
+    exercise.timings.holdAfter
+  ]);
 
-  const { primary, card, border, background } = theme; // Destructuración
-  const phaseColors = useMemo(
-    () => ({
-      ready: `radial-gradient(circle, ${card}, ${background})`,
-      inhale: exercise.colors.inhale,
-      exhale: exercise.colors.exhale,
-      hold: `radial-gradient(circle, ${primary}, ${card})`,
-      holdAfter: `radial-gradient(circle, ${border}, ${card})`,
-    }),
-    [
-      primary,
-      card,
-      border,
-      background,
-      exercise.colors.inhale,
-      exercise.colors.exhale,
-    ]
-  );
+
+  //const { primary, card, border, background } = theme; // Destructuración
+  const phaseColors = React.useMemo(() => ({
+    ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
+    inhale: exercise.colors.inhale,
+    exhale: exercise.colors.exhale,
+    hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
+    holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
+  }), [
+    theme.card,
+    theme.background,
+    theme.primary,
+    theme.border,
+    exercise.colors.inhale,
+    exercise.colors.exhale
+  ]);
 
   // Estilo del círculo (derivado del estado)
   const circleStyle = useMemo(
