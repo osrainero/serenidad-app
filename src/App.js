@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import './App.css';
 
 export const ThemeContext = createContext();
 
