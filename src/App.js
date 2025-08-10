@@ -11,6 +11,38 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const ThemeContext = createContext();
 
+
+
+const staticThemes = {
+  serenidad: {
+    name: "Serenidad",
+    primary: "#8A88F2",
+    background: "#18181B",
+    card: "#27272A",
+    text: "#E4E4E7",
+    textSecondary: "#A1A1AA",
+    border: "#3F3F46",
+  },
+  oceano: {
+    name: "Océano",
+    primary: "#38BDF8",
+    background: "#0C1E32",
+    card: "#172A46",
+    text: "#E0F2FE",
+    textSecondary: "#94A3B8",
+    border: "#334155",
+  },
+  dinamico: {
+    name: "Material You",
+    primary: "var(--primary)",
+    background: "var(--background)",
+    card: "var(--card)",
+    text: "var(--text)",
+    textSecondary: "var(--text-secondary)",
+    border: "var(--border)",
+  }
+};
+
 // --- ICONOS SVG ---
 const MenuIcon = () => (
   <svg
@@ -136,90 +168,31 @@ const CheckIcon = () => (
   </svg>
 );
 
-// --- SISTEMA DE TEMAS ---
-const themes = {
-  serenidad: {
-    name: "Serenidad",
-    primary: "#8A88F2",
-    background: "#18181B",
-    card: "#27272A",
-    text: "#E4E4E7",
-    textSecondary: "#A1A1AA",
-    border: "#3F3F46",
-  },
-  oceano: {
-    name: "Océano",
-    primary: "#38BDF8",
-    background: "#0C1E32",
-    card: "#172A46",
-    text: "#E0F2FE",
-    textSecondary: "#94A3B8",
-    border: "#334155",
-  },
-  bosque: {
-    name: "Bosque",
-    primary: "#4ADE80",
-    background: "#1A2E29",
-    card: "#223C36",
-    text: "#D1FAE5",
-    textSecondary: "#A3B3AF",
-    border: "#374F49",
-  },
-  dinamico: {
-    name: "Material You",
-    primary:
-      getComputedStyle(document.documentElement).getPropertyValue(
-        "--primary"
-      ) || "#E879F9",
-    background:
-      getComputedStyle(document.documentElement).getPropertyValue(
-        "--background"
-      ) || "#241A2E",
-    card:
-      getComputedStyle(document.documentElement).getPropertyValue("--card") ||
-      "#3B2C4A",
-    text:
-      getComputedStyle(document.documentElement).getPropertyValue("--text") ||
-      "#F3E8FF",
-    textSecondary:
-      getComputedStyle(document.documentElement).getPropertyValue(
-        "--text-secondary"
-      ) || "#D9C2ED",
-    border:
-      getComputedStyle(document.documentElement).getPropertyValue("--border") ||
-      "#58456B",
-  },
-};
-
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("appTheme");
-    return savedTheme ? themes[savedTheme] : themes.serenidad;
+    return savedTheme ? staticThemes[savedTheme] : staticThemes.serenidad;
   });
 
-  const updateMaterialYouTheme = useCallback((dominantColor) => {
-    // Calcula la paleta basada en el color dominante
-    const newPalette = generateMaterialPalette(dominantColor);
-    
-    // Aplica los nuevos colores
-    document.documentElement.style.setProperty('--primary', newPalette.primary);
-    document.documentElement.style.setProperty('--background', newPalette.background);
-    document.documentElement.style.setProperty('--card', newPalette.surface);
-    document.documentElement.style.setProperty('--text', newPalette.onSurface);
-    document.documentElement.style.setProperty('--border', newPalette.outline);
+  const changeTheme = (themeName) => {
+    setTheme(staticThemes[themeName]);
+    localStorage.setItem("appTheme", themeName);
+  };
 
-    // Actualiza el tema si está activo
+  const updateMaterialYouColors = (colors) => {
+    // Actualiza las variables CSS
+    Object.entries(colors).forEach(([key, value]) => {
+      document.documentElement.style.setProperty(`--${key}`, value);
+    });
+    
+    // Si el tema actual es Material You, actualiza el estado
     if (theme.name === "Material You") {
-      setTheme(themes.dinamico);
+      setTheme({ ...staticThemes.dinamico });
     }
-  }, [theme]);
+  };
 
   return (
-    <ThemeContext.Provider value={{ 
-      theme, 
-      changeTheme, 
-      updateMaterialYouTheme 
-    }}>
+    <ThemeContext.Provider value={{ theme, changeTheme, updateMaterialYouColors }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -621,7 +594,7 @@ const ThemesScreen = () => {
         Elige la paleta de colores que más te relaje.
       </p>
       <div style={styles.themes.cardGrid}>
-        {Object.keys(themes).map((key) => (
+        {Object.keys(staticThemes).map((key) => (
           <motion.button
             key={key}
             style={{
@@ -633,7 +606,7 @@ const ThemesScreen = () => {
             whileHover={{ y: -3 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            aria-label={`Cambiar a tema ${themes[key].name}`}
+            aria-label={`Cambiar a tema ${staticThemes[key].name}`}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <div
@@ -641,7 +614,7 @@ const ThemesScreen = () => {
                   width: "40px",
                   height: "40px",
                   borderRadius: "50%",
-                  background: themes[key].primary,
+                  background: staticThemes[key].primary,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -649,7 +622,7 @@ const ThemesScreen = () => {
               >
                 {selectedTheme === key && <CheckIcon />}
               </div>
-              <h3 style={styles.themes.cardTitle}>{themes[key].name}</h3>
+              <h3 style={styles.themes.cardTitle}>{staticThemes[key].name}</h3>
             </div>
           </motion.button>
         ))}
