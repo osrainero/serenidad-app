@@ -675,7 +675,7 @@ const BreathingView = ({ exercise, onBack }) => {
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [isActive, duration, phaseDurations, phaseColors]);
+  }, [isActive, duration, phaseDurations, phaseColors, phase]);
 
   // Formatear tiempo
   const formatTime = (seconds) => {
