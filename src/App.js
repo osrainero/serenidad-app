@@ -357,7 +357,7 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div style={styles.header.titleContainer}>
         <LogoIcon color={theme.primary} />
-        <h1 style={styles.header.title}>Serenidad V1.2</h1>
+        <h1 style={styles.header.title}>Serenidad V1.3</h1>
       </div>
     </div>
   );
@@ -559,10 +559,6 @@ const ThemesScreen = () => {
 };
 
 const BreathingView = ({ exercise, onBack }) => {
-  const { theme } = useContext(ThemeContext);
-  const styles = getStyles(theme);
-  
-  // Estados
   const [phase, setPhase] = useState("ready");
   const [isActive, setIsActive] = useState(false);
   const [duration, setDuration] = useState(() => {
@@ -578,28 +574,28 @@ const BreathingView = ({ exercise, onBack }) => {
   const timerRef = useRef(null);
 
   // Configuración de fases
-  const phaseDurations = {
+  const phaseDurations = useMemo(() => ({
     inhale: exercise.timings.inhale,
     hold: exercise.timings.hold,
     exhale: exercise.timings.exhale,
     holdAfter: exercise.timings.holdAfter,
-  };
+  }), [exercise.timings]);
 
-  const phaseInstructions = {
+  const phaseInstructions = useMemo(() => ({
     ready: "Preparado",
     inhale: "Inhala",
     hold: "Mantén",
     exhale: "Exhala",
     holdAfter: "Espera",
-  };
+  }), []);
 
-  const phaseColors = {
+  const phaseColors = useMemo(() => ({
     ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
     inhale: exercise.colors.inhale,
     exhale: exercise.colors.exhale,
     hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
     holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
-  };
+  }), [exercise.colors, theme]);
 
   // Iniciar ciclo
   const startBreathingCycle = useCallback(() => {
