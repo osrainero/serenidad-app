@@ -10,9 +10,6 @@ import React, {
 import { motion, AnimatePresence } from "framer-motion";
 import './App.css';
 
-export const ThemeContext = createContext();
-
-
 
 const staticThemes = {
   serenidad: {
@@ -33,14 +30,23 @@ const staticThemes = {
     textSecondary: "#94A3B8",
     border: "#334155",
   },
-  dinamico: {
-    name: "Material You",
-    primary: "var(--primary)",
-    background: "var(--background)",
-    card: "var(--card)",
-    text: "var(--text)",
-    textSecondary: "var(--text-secondary)",
-    border: "var(--border)",
+  bosque: {
+    name: "Bosque",
+    primary: "#4ADE80",
+    background: "#1A2E29",
+    card: "#223C36",
+    text: "#D1FAE5",
+    textSecondary: "#A3B3AF",
+    border: "#374F49",
+  },
+  atardecer: {
+    name: "Atardecer",
+    primary: "#F97316",
+    background: "#2A1A1E",
+    card: "#42282E",
+    text: "#FFEDD5",
+    textSecondary: "#D4B8B0",
+    border: "#5C3A3F",
   }
 };
 
@@ -169,31 +175,30 @@ const CheckIcon = () => (
   </svg>
 );
 
+export const ThemeContext = createContext({
+  theme: staticThemes.serenidad, // Valor por defecto
+  changeTheme: () => {} // Función vacía por defecto
+});
+
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("appTheme");
-    return savedTheme ? staticThemes[savedTheme] : staticThemes.serenidad;
+    return savedTheme && staticThemes[savedTheme] 
+      ? staticThemes[savedTheme] 
+      : staticThemes.serenidad;
   });
 
-  const changeTheme = (themeName) => {
-    setTheme(staticThemes[themeName]);
-    localStorage.setItem("appTheme", themeName);
-  };
-
-  const updateMaterialYouColors = (colors) => {
-    // Actualiza las variables CSS
-    Object.entries(colors).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(`--${key}`, value);
-    });
-    
-    // Si el tema actual es Material You, actualiza el estado
-    if (theme.name === "Material You") {
-      setTheme({ ...staticThemes.dinamico });
+  const changeTheme = useCallback((themeName) => {
+    if (staticThemes[themeName]) {
+      setTheme(staticThemes[themeName]);
+      localStorage.setItem("appTheme", themeName);
     }
-  };
+  }, []);
+
+  const value = useMemo(() => ({ theme, changeTheme }), [theme, changeTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, changeTheme, updateMaterialYouColors }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
@@ -260,8 +265,10 @@ const App = () => {
   );
 };
 
+
+
 const MainApp = () => {
-  const { theme } = useContext(ThemeContext);
+  const { theme = staticThemes.serenidad } = useContext(ThemeContext); // Valor por defecto
   const [currentScreen, setCurrentScreen] = useState("home");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
@@ -271,10 +278,6 @@ const MainApp = () => {
     setCurrentScreen(screen);
     setIsDrawerOpen(false);
   }, []);
-
-  //const onBack = useCallback(() => {
-  //  setCurrentScreen("home");
-  //}, []);
 
   const startExercise = useCallback((exerciseKey) => {
     setSelectedExercise(exerciseKey);
@@ -314,7 +317,6 @@ const MainApp = () => {
     document.body.style.color = theme.text;
   }, [theme]);
 
-  //const styles = getStyles(theme);
 
   return (
     <div style={getStyles(theme).appContainer}>
@@ -356,7 +358,7 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div style={styles.header.titleContainer}>
         <LogoIcon color={theme.primary} />
-        <h1 style={styles.header.title}>Serenidad V1.4</h1>
+        <h1 style={styles.header.title}>Serenidad V1.5</h1>
       </div>
     </div>
   );
@@ -364,7 +366,7 @@ const Header = ({ onMenuClick }) => {
 
 const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
   const { theme } = useContext(ThemeContext);
-  
+
   // Estilos corregidos para Material You
   const styles = {
     drawer: {
@@ -374,17 +376,18 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         left: 0,
         width: "280px",
         height: "100%",
-        backgroundColor: theme.name === "Material You" 
-          ? "var(--card, #3B2C4A)"  // Fallback por si no existe la variable
-          : theme.card,
+        backgroundColor:
+          theme.name === "Material You"
+            ? "var(--card, #3B2C4A)" // Fallback por si no existe la variable
+            : theme.card,
         zIndex: 20,
         padding: "60px 20px",
         borderRight: `1px solid ${
-          theme.name === "Material You" 
-            ? "var(--border, #58456B)" 
+          theme.name === "Material You"
+            ? "var(--border, #58456B)"
             : theme.border
         }`,
-        willChange: "transform"
+        willChange: "transform",
       },
       overlay: {
         position: "fixed",
@@ -394,7 +397,7 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         bottom: 0,
         backgroundColor: "rgba(0,0,0,0.5)",
         zIndex: 15,
-        willChange: "opacity"
+        willChange: "opacity",
       },
       closeButton: {
         position: "absolute",
@@ -402,9 +405,8 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         right: "16px",
         background: "none",
         border: "none",
-        color: theme.name === "Material You" 
-          ? "var(--text, #F3E8FF)" 
-          : theme.text,
+        color:
+          theme.name === "Material You" ? "var(--text, #F3E8FF)" : theme.text,
         cursor: "pointer",
         padding: "8px",
         borderRadius: "50%",
@@ -412,10 +414,11 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         alignItems: "center",
         justifyContent: "center",
         ":hover": {
-          backgroundColor: (theme.name === "Material You" 
-            ? "var(--primary, #E879F9)" 
-            : theme.primary) + "20"
-        }
+          backgroundColor:
+            (theme.name === "Material You"
+              ? "var(--primary, #E879F9)"
+              : theme.primary) + "20",
+        },
       },
       navLink: {
         display: "block",
@@ -423,9 +426,8 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         padding: "16px",
         background: "none",
         border: "none",
-        color: theme.name === "Material You" 
-          ? "var(--text, #F3E8FF)" 
-          : theme.text,
+        color:
+          theme.name === "Material You" ? "var(--text, #F3E8FF)" : theme.text,
         fontSize: "1.1rem",
         textAlign: "left",
         borderRadius: "12px",
@@ -433,12 +435,13 @@ const SideDrawer = ({ isOpen, onClose, onNavigate }) => {
         marginBottom: "8px",
         transition: "all 0.2s ease",
         ":hover": {
-          backgroundColor: (theme.name === "Material You" 
-            ? "var(--primary, #E879F9)" 
-            : theme.primary) + "20"
-        }
-      }
-    }
+          backgroundColor:
+            (theme.name === "Material You"
+              ? "var(--primary, #E879F9)"
+              : theme.primary) + "20",
+        },
+      },
+    },
   };
 
   return (
@@ -657,34 +660,39 @@ const BreathingView = ({ exercise, onBack }) => {
   };
 
   // Memoización corregida
-  const phaseDurations = React.useMemo(() => ({
-    inhale: exercise.timings.inhale,
-    hold: exercise.timings.hold,
-    exhale: exercise.timings.exhale,
-    holdAfter: exercise.timings.holdAfter,
-  }), [
-    exercise.timings.inhale, 
-    exercise.timings.hold, 
-    exercise.timings.exhale, 
-    exercise.timings.holdAfter
-  ]);
-
+  const phaseDurations = React.useMemo(
+    () => ({
+      inhale: exercise.timings.inhale,
+      hold: exercise.timings.hold,
+      exhale: exercise.timings.exhale,
+      holdAfter: exercise.timings.holdAfter,
+    }),
+    [
+      exercise.timings.inhale,
+      exercise.timings.hold,
+      exercise.timings.exhale,
+      exercise.timings.holdAfter,
+    ]
+  );
 
   //const { primary, card, border, background } = theme; // Destructuración
-  const phaseColors = React.useMemo(() => ({
-    ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
-    inhale: exercise.colors.inhale,
-    exhale: exercise.colors.exhale,
-    hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
-    holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
-  }), [
-    theme.card,
-    theme.background,
-    theme.primary,
-    theme.border,
-    exercise.colors.inhale,
-    exercise.colors.exhale
-  ]);
+  const phaseColors = React.useMemo(
+    () => ({
+      ready: `radial-gradient(circle, ${theme.card}, ${theme.background})`,
+      inhale: exercise.colors.inhale,
+      exhale: exercise.colors.exhale,
+      hold: `radial-gradient(circle, ${theme.primary}, ${theme.card})`,
+      holdAfter: `radial-gradient(circle, ${theme.border}, ${theme.card})`,
+    }),
+    [
+      theme.card,
+      theme.background,
+      theme.primary,
+      theme.border,
+      exercise.colors.inhale,
+      exercise.colors.exhale,
+    ]
+  );
 
   // Estilo del círculo (derivado del estado)
   const circleStyle = useMemo(
