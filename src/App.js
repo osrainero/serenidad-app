@@ -352,7 +352,7 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div style={styles.header.titleContainer}>
         <LogoIcon color={theme.primary} />
-        <h1 style={styles.header.title}>Serenidad V1.5</h1>
+        <h1 style={styles.header.title}>Serenidad V1.6</h1>
       </div>
     </div>
   );
@@ -653,6 +653,39 @@ const BreathingView = ({ exercise, onBack }) => {
     holdAfter: "Espera",
   };
 
+  const phaseCircleColors = {
+    ready: theme.primary,
+    inhale: "#10B981", // Verde esmeralda
+    hold: "#F59E0B", // Ámbar
+    exhale: "#EF4444", // Rojo
+    holdAfter: "#3B82F6", // Azul
+  };
+  const SIZE_CONFIG = {
+    default: 1.0, // Tamaño normal
+    inhale: 1.8, // Máximo crecimiento (aumenta este valor para hacerlo más grande)
+    exhale: 0.8, // Mínimo tamaño (disminuye este valor para hacerlo más pequeño)
+    hold: "previous", // Mantiene el tamaño de la fase anterior
+  };
+
+  // Lógica de escalado mejorada
+  const circleScale = {
+    ready: SIZE_CONFIG.default,
+    inhale: SIZE_CONFIG.inhale,
+    hold: phase === "inhale" ? SIZE_CONFIG.inhale : SIZE_CONFIG.exhale,
+    exhale: SIZE_CONFIG.exhale,
+    holdAfter: SIZE_CONFIG.exhale,
+  };
+
+  const getTransitionConfig = (phase) => ({
+    duration:
+      phase === "inhale"
+        ? exercise.timings.inhale * 0.8
+        : phase === "exhale"
+        ? exercise.timings.exhale * 0.8
+        : 0.4,
+    ease: [0.43, 0.13, 0.23, 0.96],
+  });
+
   // Memoización corregida
   const phaseDurations = React.useMemo(
     () => ({
@@ -810,31 +843,29 @@ const BreathingView = ({ exercise, onBack }) => {
         {renderProgressCircle()}
 
         {/* Círculo principal */}
-        <motion.div
-          style={{
-            position: "absolute",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+         <motion.div
+          style={styles.breathing.innerCircle}
           animate={{
-            scale: phase === "inhale" ? 1.1 : phase === "exhale" ? 0.9 : 1,
+            scale: circleScale[phase],
+            backgroundColor: phaseCircleColors[phase]
           }}
-          transition={{ duration: 0.5 }}
-        >
-          <span style={styles.breathing.phaseText}>
-            {phaseInstructions[phase]}
-          </span>
-          <div style={styles.breathing.phaseTime}>{formatTime(timeLeft)}</div>
-        </motion.div>
+          transition={getTransitionConfig(phase)} 
+        />
+          {/* Contenedor de texto con tamaño fijo */}
+          <div style={styles.breathing.textContainer}>
+            <span style={styles.breathing.phaseText}>
+              {phaseInstructions[phase]}
+            </span>
+            <div style={styles.breathing.phaseTime}>{formatTime(timeLeft)}</div>
+          </div>
+        
       </div>
 
       {isActive ? (
         <div style={styles.breathing.activeControls}>
           <button
-            style={styles.breathing.stopButton}
             onClick={stopBreathingCycle}
+            style={styles.breathing.stopButton}
           >
             Detener
           </button>
@@ -1260,40 +1291,49 @@ const getStyles = (theme) => ({
       },
     },
     circleContainer: {
-      flex: 1,
+      position: "relative",
+      width: "300px",
+      height: "300px",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      width: "100%",
-      marginTop: "-200px", // Posicion del circulo... (era -50 originalmente)
-      position: "relative",
+      marginTop: "-200px",
     },
-    circleeee: {
-      width: "250px",
-      height: "250px",
+    innerCircle: {
+      position: "absolute",
+      width: "120px",
+      height: "120px",
       borderRadius: "50%",
-      border: `8px solid ${theme.border}`, // Borde base
-      borderTopColor: theme.primary, // Color de progreso
+      boxShadow: `0 0 25px ${theme.primary}80`, // Sombra difuminada
+      filter: "drop-shadow(0 0 10px rgba(0,0,0,0.3))", // Sombra adicional
+      willChange: "transform, background-color",
+    },
+    textContainer: {
+      position: "absolute",
       display: "flex",
+      flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: `0 0 70px ${theme.primary}60`,
-      flexDirection: "column",
-      position: "relative",
-      willChange: "transform, background",
+      width: "100%", // Ancho fijo
+      height: "100%", // Alto fijo
+      pointerEvents: "none",
+      zIndex: 2, // Asegura que el texto esté sobre el círculo
     },
+
     phaseText: {
       color: "white",
-      fontSize: "2rem",
-      fontWeight: "500",
+      fontSize: "1.8",
+      fontWeight: "600",
       marginBottom: "8px",
-      textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+      textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+      pointerEvents: "none", // Evita que el texto interfiera con clicks
     },
     phaseTime: {
-      color: "rgba(255,255,255,0.8)",
-      fontSize: "1.5rem",
-      fontWeight: "300",
+      color: "rgba(255,255,255,0.9)",
+      fontSize: "1.4rem",
+      fontWeight: "400",
       textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+      pointerEvents: "none",
     },
     progressBarContainer: {
       display: "none",
