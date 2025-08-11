@@ -352,7 +352,7 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div style={styles.header.titleContainer}>
         <LogoIcon color={theme.primary} />
-        <h1 style={styles.header.title}>Serenidad V1.6</h1>
+        <h1 style={styles.header.title}>Serenidad V1.7</h1>
       </div>
     </div>
   );
@@ -653,38 +653,36 @@ const BreathingView = ({ exercise, onBack }) => {
     holdAfter: "Espera",
   };
 
-  const phaseCircleColors = {
-    ready: theme.primary,
-    inhale: "#10B981", // Verde esmeralda
-    hold: "#F59E0B", // Ámbar
-    exhale: "#EF4444", // Rojo
-    holdAfter: "#3B82F6", // Azul
-  };
-  const SIZE_CONFIG = {
-    default: 1.0, // Tamaño normal
-    inhale: 1.8, // Máximo crecimiento (aumenta este valor para hacerlo más grande)
-    exhale: 0.8, // Mínimo tamaño (disminuye este valor para hacerlo más pequeño)
-    hold: "previous", // Mantiene el tamaño de la fase anterior
+  const phaseColors = {
+    ready: theme.primary, // Color del tema
+    inhale: "#10B981", // Verde para inhalar
+    hold: "#F59E0B", // Ámbar para mantener
+    exhale: "#EF4444", // Rojo para exhalar
+    holdAfter: "#3B82F6", // Azul para mantener después de exhalar
   };
 
-  // Lógica de escalado mejorada
-  const circleScale = {
-    ready: SIZE_CONFIG.default,
-    inhale: SIZE_CONFIG.inhale,
-    hold: phase === "inhale" ? SIZE_CONFIG.inhale : SIZE_CONFIG.exhale,
-    exhale: SIZE_CONFIG.exhale,
-    holdAfter: SIZE_CONFIG.exhale,
+  const PHASE_SCALES = {
+    ready: 1, // Preparado: tamaño normal (100%)
+    inhale: 2, // Inhala: crece al 200%
+    hold: 2, // Mantén (después de inhalar): mantiene 200%
+    exhale: 1, // Exhala: reduce al 100%
+    holdAfter: 1, // Mantén (después de exhalar): mantiene 100%
   };
 
-  const getTransitionConfig = (phase) => ({
-    duration:
-      phase === "inhale"
-        ? exercise.timings.inhale * 0.8
-        : phase === "exhale"
-        ? exercise.timings.exhale * 0.8
-        : 0.4,
-    ease: [0.43, 0.13, 0.23, 0.96],
-  });
+  const getTransitionConfig = (currentPhase) => {
+    const baseDuration =
+      {
+        inhale: exercise.timings.inhale,
+        hold: exercise.timings.hold,
+        exhale: exercise.timings.exhale,
+        holdAfter: exercise.timings.holdAfter,
+      }[currentPhase] || 0.3;
+
+    return {
+      duration: baseDuration * 0.9, // Hacemos la animación un 10% más rápida que la fase
+      ease: [0.43, 0.13, 0.23, 0.96], // Curva de easing suave
+    };
+  };
 
   // Memoización corregida
   const phaseDurations = React.useMemo(
@@ -843,22 +841,21 @@ const BreathingView = ({ exercise, onBack }) => {
         {renderProgressCircle()}
 
         {/* Círculo principal */}
-         <motion.div
+        <motion.div
           style={styles.breathing.innerCircle}
           animate={{
-            scale: circleScale[phase],
-            backgroundColor: phaseCircleColors[phase]
+            scale: PHASE_SCALES[phase],
+            backgroundColor: phaseColors[phase],
           }}
-          transition={getTransitionConfig(phase)} 
+          transition={getTransitionConfig(phase)}
         />
-          {/* Contenedor de texto con tamaño fijo */}
-          <div style={styles.breathing.textContainer}>
-            <span style={styles.breathing.phaseText}>
-              {phaseInstructions[phase]}
-            </span>
-            <div style={styles.breathing.phaseTime}>{formatTime(timeLeft)}</div>
-          </div>
-        
+        {/* Contenedor de texto con tamaño fijo */}
+        <div style={styles.breathing.textContainer}>
+          <span style={styles.breathing.phaseText}>
+            {phaseInstructions[phase]}
+          </span>
+          <div style={styles.breathing.phaseTime}>{formatTime(timeLeft)}</div>
+        </div>
       </div>
 
       {isActive ? (
@@ -1019,6 +1016,7 @@ const getStyles = (theme) => ({
       padding: "20px",
       width: "100%",
       maxWidth: "400px",
+      margin: "0 auto",
     },
     subtitle: {
       fontSize: "1rem",
@@ -1030,6 +1028,7 @@ const getStyles = (theme) => ({
       display: "flex",
       flexDirection: "column",
       gap: "16px",
+      alignItems: "center",
     },
     card: {
       background: theme.card,
@@ -1040,9 +1039,10 @@ const getStyles = (theme) => ({
       cursor: "pointer",
       transition: "all 0.3s ease",
       color: theme.text,
-      width: "100%",
       boxShadow: `0 4px 6px rgba(0,0,0,0.1)`,
       outline: "none",
+      width: "100%", // Ocupa todo el ancho disponible
+      maxWidth: "350px", // Ancho máximo para las tarjetas
       ":focus": {
         boxShadow: `0 0 0 3px ${theme.primary}80`,
       },
