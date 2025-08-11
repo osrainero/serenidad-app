@@ -831,7 +831,7 @@ const BreathingView = ({ exercise, onBack }) => {
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset =
       circumference - (progressPercentage / 100) * circumference;
-    const rotation = -90; // Comienza en la parte superior (12 en punto)
+    const rotation = 0; // Comienza en la parte superior (12 en punto)
 
     return (
       <svg
@@ -850,7 +850,7 @@ const BreathingView = ({ exercise, onBack }) => {
           r={radius}
           fill="none"
           stroke={theme.border}
-          strokeWidth="10"
+          strokeWidth="5"
         />
 
         {/* Círculo de progreso (color primario) */}
@@ -860,7 +860,7 @@ const BreathingView = ({ exercise, onBack }) => {
           r={radius}
           fill="none"
           stroke={theme.primary}
-          strokeWidth="10"
+          strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -1344,20 +1344,20 @@ const getStyles = (theme) => ({
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      marginTop: "-200px",
+      marginTop: "-220px",
     },
     innerCircle: {
       position: 'absolute',
-      width: '80px',  // Reducimos el tamaño (era 120px)
-      height: '80px',
+      width: '100px',  // Reducimos el tamaño (era 120px)
+      height: '100px',
       borderRadius: '50%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       willChange: 'transform, background-color, box-shadow',
       boxShadow: `
-        0 0 15px ${theme.primary},
-        0 0 30px ${theme.primary}80,
+        0 0 30px rgb(228,228,231),
+        0 0 50px ${theme.primary}80,
         0 0 45px ${theme.primary}40
       `, // Triple sombra para efecto glow
       filter: 'brightness(1.1) contrast(1.1)'
