@@ -11,5 +11,11 @@
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#8A88F2",
-  "background_color": "#18181B"
+  "background_color": "#18181B",
+  "protocol_handlers": [
+    {
+      "protocol": "web+serenidad",
+      "url": "/?source=%s"
+    }
+  ]
 }

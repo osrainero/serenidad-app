@@ -731,6 +731,33 @@ const BreathingView = ({ exercise, onBack }) => {
     };
   };
 
+  useEffect(() => {
+    let wakeLock = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await navigator.wakeLock.request("screen");
+          console.log("Wake Lock activado");
+        }
+      } catch (err) {
+        console.error("Error al activar Wake Lock:", err);
+      }
+    };
+
+    if (isActive) {
+      requestWakeLock();
+    }
+
+    return () => {
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          console.log("Wake Lock liberado");
+        });
+      }
+    };
+  }, [isActive]); // Dependencia: solo se ejecuta cuando isActive cambia
+
   // Memoización corregida
   const phaseDurations = React.useMemo(
     () => ({
@@ -763,8 +790,6 @@ const BreathingView = ({ exercise, onBack }) => {
     setProgressPercentage(0);
   }, []);
 
-  // Temporizador principal
-  // Efecto principal optimizado
   useEffect(() => {
     if (!isActive) return;
 
@@ -1347,20 +1372,20 @@ const getStyles = (theme) => ({
       marginTop: "-220px",
     },
     innerCircle: {
-      position: 'absolute',
-      width: '100px',  // Reducimos el tamaño (era 120px)
-      height: '100px',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      willChange: 'transform, background-color, box-shadow',
+      position: "absolute",
+      width: "100px", // Reducimos el tamaño (era 120px)
+      height: "100px",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      willChange: "transform, background-color, box-shadow",
       boxShadow: `
         0 0 30px rgb(228,228,231),
         0 0 50px ${theme.primary}80,
         0 0 45px ${theme.primary}40
       `, // Triple sombra para efecto glow
-      filter: 'brightness(1.1) contrast(1.1)'
+      filter: "brightness(1.1) contrast(1.1)",
     },
     textContainer: {
       position: "absolute",
