@@ -14,38 +14,42 @@ const staticThemes = {
   serenidad: {
     name: "Serenidad",
     primary: "#8A88F2",
-    background: "#18181B",
+    background: "linear-gradient(135deg, #18181B 0%, #2E2D3D 100%)",
     card: "#27272A",
     text: "#E4E4E7",
     textSecondary: "#A1A1AA",
     border: "#3F3F46",
+    gradient: ["#18181B", "#2E2D3D", "#3A394A"], // Degradado para animación
   },
   oceano: {
     name: "Océano",
     primary: "#38BDF8",
-    background: "#0C1E32",
+    background: "linear-gradient(135deg, #0C1E32 0%, #15324D 100%)",
     card: "#172A46",
     text: "#E0F2FE",
     textSecondary: "#94A3B8",
     border: "#334155",
+    gradient: ["#0C1E32", "#15324D", "#1E4B6E"],
   },
   bosque: {
     name: "Bosque",
     primary: "#4ADE80",
-    background: "#1A2E29",
+    background: "linear-gradient(135deg, #1A2E29 0%, #223C36 100%)",
     card: "#223C36",
     text: "#D1FAE5",
     textSecondary: "#A3B3AF",
     border: "#374F49",
+    gradient: ["#1A2E29", "#223C36", "#2B4A43"],
   },
   atardecer: {
     name: "Atardecer",
     primary: "#F97316",
-    background: "#2A1A1E",
+    background: "linear-gradient(135deg, #2A1A1E 0%, #42282E 100%)",
     card: "#42282E",
     text: "#FFEDD5",
     textSecondary: "#D4B8B0",
     border: "#5C3A3F",
+    gradient: ["#2A1A1E", "#42282E", "#5C3A3F"],
   },
 };
 
@@ -97,6 +101,48 @@ const LogoIcon = ({ color }) => (
     />
   </svg>
 );
+
+const BackgroundAnimator = () => {
+  const { theme } = useContext(ThemeContext);
+  const [gradientIndex, setGradientIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGradientIndex((prev) => (prev + 1) % theme.gradient.length);
+    }, 10000); // Cambia cada 10 segundos
+
+    return () => clearInterval(interval);
+  }, [theme.gradient]);
+
+  return (
+    <motion.div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: -1,
+        background: `linear-gradient(135deg, ${
+          theme.gradient[gradientIndex]
+        } 0%, ${
+          theme.gradient[(gradientIndex + 1) % theme.gradient.length]
+        } 100%)`,
+      }}
+      animate={{
+        background: `linear-gradient(135deg, ${
+          theme.gradient[gradientIndex]
+        } 0%, ${
+          theme.gradient[(gradientIndex + 2) % theme.gradient.length]
+        } 100%)`,
+      }}
+      transition={{
+        duration: 10,
+        ease: "linear",
+      }}
+    />
+  );
+};
 
 const RelaxIcon = () => (
   <svg
@@ -257,6 +303,7 @@ const helpContent = [
 const App = () => {
   return (
     <ThemeProvider>
+      <BackgroundAnimator />
       <MainApp />
     </ThemeProvider>
   );
@@ -902,7 +949,6 @@ const BreathingView = ({ exercise, onBack }) => {
 // --- FUNCIÓN DE ESTILOS DINÁMICOS ---
 const getStyles = (theme) => ({
   appContainer: {
-    backgroundColor: theme.background,
     minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
@@ -913,6 +959,7 @@ const getStyles = (theme) => ({
     boxSizing: "border-box",
     position: "relative",
     overflowX: "hidden",
+    background: "transparent", // Ahora el fondo viene del BackgroundAnimator
   },
   header: {
     container: {
@@ -1300,13 +1347,20 @@ const getStyles = (theme) => ({
       marginTop: "-200px",
     },
     innerCircle: {
-      position: "absolute",
-      width: "120px",
-      height: "120px",
-      borderRadius: "50%",
-      boxShadow: `0 0 25px ${theme.primary}80`, // Sombra difuminada
-      filter: "drop-shadow(0 0 10px rgba(0,0,0,0.3))", // Sombra adicional
-      willChange: "transform, background-color",
+      position: 'absolute',
+      width: '80px',  // Reducimos el tamaño (era 120px)
+      height: '80px',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      willChange: 'transform, background-color, box-shadow',
+      boxShadow: `
+        0 0 15px ${theme.primary},
+        0 0 30px ${theme.primary}80,
+        0 0 45px ${theme.primary}40
+      `, // Triple sombra para efecto glow
+      filter: 'brightness(1.1) contrast(1.1)'
     },
     textContainer: {
       position: "absolute",
