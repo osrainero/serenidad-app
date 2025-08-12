@@ -355,22 +355,50 @@ const MainApp = () => {
   }, [currentScreen, selectedExercise, theme.text, startExercise]);
 
   useEffect(() => {
-    // Efecto para prevenir notificación de URL
-    if (navigator.serviceWorker?.controller) {
+  // Prevenir notificación de URL en PWA
+  const preventURLNotification = () => {
+    // Método 1: Interceptar el evento de instalación
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({
-        type: "DENY_URL_COPY",
+        type: 'DENY_URL_COPY',
       });
     }
 
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      window.history.replaceState({}, "", "/?standalone=1");
+    // Método 2: Modificar el historial para evitar detección
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      // Reemplazar la URL actual sin el parámetro que puede triggear la notificación
+      const url = new URL(window.location);
+      url.searchParams.delete('source');
+      url.searchParams.delete('utm_source');
+      window.history.replaceState({}, '', url.pathname);
     }
-  }, []); // <-- Array de dependencias vacío para que se ejecute solo al montar
 
-  useEffect(() => {
-    document.body.style.backgroundColor = theme.background;
-    document.body.style.color = theme.text;
-  }, [theme]);
+    // Método 3: Prevenir eventos relacionados con compartir/copiar URL
+    const preventShare = (e) => {
+      if (e.target?.tagName === 'META' && e.target?.name === 'theme-color') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    document.addEventListener('click', preventShare, true);
+    document.addEventListener('touchstart', preventShare, true);
+
+    return () => {
+      document.removeEventListener('click', preventShare, true);
+      document.removeEventListener('touchstart', preventShare, true);
+    };
+  };
+
+  // Ejecutar después de que la app esté completamente cargada
+  const cleanup = preventURLNotification();
+
+  // Aplicar estilos del tema
+  document.body.style.backgroundColor = theme.background;
+  document.body.style.color = theme.text;
+
+  return cleanup;
+}, [theme]); // Solo depende del theme
 
   return (
     <div style={getStyles(theme).appContainer}>

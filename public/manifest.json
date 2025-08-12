@@ -1,11 +1,12 @@
 {
   "name": "Serenidad",
   "short_name": "Serenidad",
-  "start_url": "/?source=pwa",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#241A2E",
   "theme_color": "#241A2E",
+  "scope": "/",
   "icons": [
     {
       "src": "icon-192x192.png",
@@ -18,20 +19,5 @@
       "type": "image/png"
     }
   ],
-  "prefer_related_applications": false,
-  "protocol_handlers": [
-    {
-      "protocol": "web+serenidad",
-      "url": "/?source=%s"
-    }
-  ],
-  "share_target": {
-    "action": "/",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  "prefer_related_applications": false
 }
