@@ -355,6 +355,19 @@ const MainApp = () => {
   }, [currentScreen, selectedExercise, theme.text, startExercise]);
 
   useEffect(() => {
+    // Efecto para prevenir notificación de URL
+    if (navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: "DENY_URL_COPY",
+      });
+    }
+
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      window.history.replaceState({}, "", "/?standalone=1");
+    }
+  }, []); // <-- Array de dependencias vacío para que se ejecute solo al montar
+
+  useEffect(() => {
     document.body.style.backgroundColor = theme.background;
     document.body.style.color = theme.text;
   }, [theme]);
