@@ -355,50 +355,50 @@ const MainApp = () => {
   }, [currentScreen, selectedExercise, theme.text, startExercise]);
 
   useEffect(() => {
-  // Prevenir notificación de URL en PWA
-  const preventURLNotification = () => {
-    // Método 1: Interceptar el evento de instalación
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'DENY_URL_COPY',
-      });
-    }
-
-    // Método 2: Modificar el historial para evitar detección
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      // Reemplazar la URL actual sin el parámetro que puede triggear la notificación
-      const url = new URL(window.location);
-      url.searchParams.delete('source');
-      url.searchParams.delete('utm_source');
-      window.history.replaceState({}, '', url.pathname);
-    }
-
-    // Método 3: Prevenir eventos relacionados con compartir/copiar URL
-    const preventShare = (e) => {
-      if (e.target?.tagName === 'META' && e.target?.name === 'theme-color') {
-        e.preventDefault();
-        e.stopPropagation();
+    // Prevenir notificación de URL en PWA
+    const preventURLNotification = () => {
+      // Método 1: Interceptar el evento de instalación
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: "DENY_URL_COPY",
+        });
       }
+
+      // Método 2: Modificar el historial para evitar detección
+      if (window.matchMedia("(display-mode: standalone)").matches) {
+        // Reemplazar la URL actual sin el parámetro que puede triggear la notificación
+        const url = new URL(window.location);
+        url.searchParams.delete("source");
+        url.searchParams.delete("utm_source");
+        window.history.replaceState({}, "", url.pathname);
+      }
+
+      // Método 3: Prevenir eventos relacionados con compartir/copiar URL
+      const preventShare = (e) => {
+        if (e.target?.tagName === "META" && e.target?.name === "theme-color") {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+
+      document.addEventListener("click", preventShare, true);
+      document.addEventListener("touchstart", preventShare, true);
+
+      return () => {
+        document.removeEventListener("click", preventShare, true);
+        document.removeEventListener("touchstart", preventShare, true);
+      };
     };
 
-    document.addEventListener('click', preventShare, true);
-    document.addEventListener('touchstart', preventShare, true);
+    // Ejecutar después de que la app esté completamente cargada
+    const cleanup = preventURLNotification();
 
-    return () => {
-      document.removeEventListener('click', preventShare, true);
-      document.removeEventListener('touchstart', preventShare, true);
-    };
-  };
+    // Aplicar estilos del tema
+    document.body.style.backgroundColor = theme.background;
+    document.body.style.color = theme.text;
 
-  // Ejecutar después de que la app esté completamente cargada
-  const cleanup = preventURLNotification();
-
-  // Aplicar estilos del tema
-  document.body.style.backgroundColor = theme.background;
-  document.body.style.color = theme.text;
-
-  return cleanup;
-}, [theme]); // Solo depende del theme
+    return cleanup;
+  }, [theme]); // Solo depende del theme
 
   return (
     <div style={getStyles(theme).appContainer}>
@@ -579,7 +579,9 @@ const HomeScreen = ({ onStart }) => {
       <p style={styles.menu.subtitle}>
         Bienvenido. Elige una práctica para comenzar tu momento de calma.
       </p>
-      <div style={styles.menu.cardGrid}>
+      <div style={styles.menu.cardGrid}
+      className="menu-card-grid"
+      >
         {Object.keys(exercises).map((key) => (
           <motion.button
             key={key}
@@ -735,12 +737,19 @@ const BreathingView = ({ exercise, onBack }) => {
   // Objetos estáticos (no cambian entre renders)
   const phaseInstructions = {
     ready: "Preparado",
-    inhale: "Inhala",
-    hold: "Mantén",
-    exhale: "Exhala",
-    holdAfter: "Espera",
+    inhale: "Inhala lentamente por la nariz",
+    hold: "Sostén el aire en tus pulmones",
+    exhale: "Exhala suavemente por la boca",
+    holdAfter: "Mantén los pulmones vacíos",
   };
 
+  const phaseDescriptions = {
+    ready: "Toca comenzar para iniciar la práctica",
+    inhale: "Llena tus pulmones suavemente...",
+    hold: "Permanece en calma con el aire dentro...",
+    exhale: "Libera todo el aire lentamente...",
+    holdAfter: "Preparándote para el siguiente ciclo...",
+  };
   const phaseColors = {
     ready: theme.primary, // Color del tema
     inhale: "#10B981", // Verde para inhalar
@@ -967,6 +976,16 @@ const BreathingView = ({ exercise, onBack }) => {
           <span style={styles.breathing.phaseText}>
             {phaseInstructions[phase]}
           </span>
+          <motion.div
+            key={phase}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5 }}
+            style={styles.breathing.phaseDescription}
+          >
+            {phaseDescriptions[phase]}
+          </motion.div>
           <div style={styles.breathing.phaseTime}>{formatTime(timeLeft)}</div>
         </div>
       </div>
@@ -984,20 +1003,24 @@ const BreathingView = ({ exercise, onBack }) => {
         <div style={styles.breathing.controlsContainer}>
           <h2 style={styles.breathing.exerciseTitle}>{exercise.name}</h2>
           <div style={styles.breathing.controls}>
-            {[1, 3, 5].map((min) => (
-              <motion.button
-                key={min}
-                style={
-                  duration === min * 60
-                    ? styles.breathing.controlButtonActive
-                    : styles.breathing.controlButton
-                }
-                onClick={() => setDuration(min * 60)}
-                whileTap={{ scale: 0.95 }}
-              >
-                {min} min
-              </motion.button>
-            ))}
+            {[1, 3, 5, 10].map(
+              (
+                min //Agregar mas "tiempos" al array en caso de guste
+              ) => (
+                <motion.button
+                  key={min}
+                  style={
+                    duration === min * 60
+                      ? styles.breathing.controlButtonActive
+                      : styles.breathing.controlButton
+                  }
+                  onClick={() => setDuration(min * 60)}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {min} min
+                </motion.button>
+              )
+            )}
           </div>
           <motion.button
             style={styles.breathing.startButton}
@@ -1128,57 +1151,95 @@ const getStyles = (theme) => ({
       textAlign: "center",
       padding: "20px",
       width: "100%",
-      maxWidth: "400px",
+      maxWidth: "500px",
       margin: "0 auto",
     },
     subtitle: {
       fontSize: "1rem",
       color: theme.textSecondary,
-      marginBottom: "32px",
+      marginBottom: "40px",
       lineHeight: 1.5,
     },
     cardGrid: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "16px",
-      alignItems: "center",
+      display: "grid",
+      gridTemplateColumns: "repeat(2, 1fr)",
+      gap: "20px",
+      alignItems: "stretch",
     },
     card: {
-      background: theme.card,
-      border: `1px solid ${theme.border}`,
-      borderRadius: "28px",
-      padding: "24px",
-      textAlign: "left",
+      background: "rgba(255, 255, 255, 0.1)",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+      border: `1px solid rgba(255, 255, 255, 0.2)`,
+      borderRadius: "24px",
+      padding: "30px 20px",
+      textAlign: "center",
       cursor: "pointer",
       transition: "all 0.3s ease",
       color: theme.text,
-      boxShadow: `0 4px 6px rgba(0,0,0,0.1)`,
+      boxShadow: `
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 1px rgba(255, 255, 255, 0.1)
+    `,
       outline: "none",
-      width: "100%", // Ocupa todo el ancho disponible
-      maxWidth: "350px", // Ancho máximo para las tarjetas
+      minHeight: "180px",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+      overflow: "hidden",
+      ":before": {
+        content: '""',
+        position: "absolute",
+        top: "-2px",
+        left: "-2px",
+        right: "-2px",
+        bottom: "-2px",
+        background: `linear-gradient(45deg, 
+        ${theme.primary}20, 
+        ${theme.primary}10, 
+        transparent
+      )`,
+        borderRadius: "26px",
+        zIndex: -1,
+      },
+      ":hover": {
+        transform: "translateY(-8px) scale(1.03)",
+        boxShadow: `
+        0 15px 45px rgba(0, 0, 0, 0.2),
+        0 0 0 1px ${theme.primary}30,
+        inset 0 1px 1px rgba(255, 255, 255, 0.2)
+      `,
+        background: "rgba(255, 255, 255, 0.15)",
+      },
       ":focus": {
-        boxShadow: `0 0 0 3px ${theme.primary}80`,
+        boxShadow: `0 0 0 3px ${theme.primary}40`,
       },
     },
     cardIcon: {
-      marginBottom: "16px",
-      width: "48px",
-      height: "48px",
+      marginBottom: "20px",
+      width: "64px",
+      height: "64px",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+      color: theme.primary,
+      filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
     },
     cardTitle: {
-      fontSize: "1.25rem",
-      fontWeight: "500",
-      margin: "0 0 8px 0",
+      fontSize: "1.3rem",
+      fontWeight: "600",
+      margin: "0 0 12px 0",
       color: theme.text,
+      textShadow: "0 2px 4px rgba(0,0,0,0.2)",
     },
     cardDescription: {
-      fontSize: "0.9rem",
-      color: theme.textSecondary,
+      fontSize: "0.85rem",
+      color: "rgba(255,255,255,0.9)",
       margin: 0,
       lineHeight: 1.5,
+      fontWeight: "400",
     },
   },
   themes: {
@@ -1383,6 +1444,16 @@ const getStyles = (theme) => ({
       padding: "20px",
       boxSizing: "border-box",
       position: "relative",
+    },
+    phaseDescription: {
+      color: "rgba(255,255,255,0.8)",
+      fontSize: "0.9rem",
+      fontWeight: "400",
+      textAlign: "center",
+      margin: "8px 0",
+      textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+      maxWidth: "200px",
+      lineHeight: "1.4",
     },
     backButton: {
       position: "absolute",
@@ -1644,7 +1715,27 @@ const globalStyles = `
     outline: none;
     box-shadow: 0 0 0 3px rgba(138, 136, 242, 0.5);
   }
-`;
+@media (max-width: 768px) {
+  .menu-card-grid {
+    grid-template-columns: 1fr !important;
+    max-width: 350px;
+    margin: 0 auto;
+  }
+  
+  .menu-card {
+    min-height: 160px;
+    padding: 25px 15px;
+  }
+  
+  .menu-card-icon {
+    width: 56px !important;
+    height: 56px !important;
+  }
+}
+
+
+
+  `;
 
 const styleSheet = document.createElement("style");
 styleSheet.type = "text/css";
